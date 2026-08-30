@@ -1,8 +1,10 @@
 package com.example.mybank.mappers;
 
 import com.example.mybank.dto.requests.RegisterRequest;
+import com.example.mybank.dto.responses.AccountSummaryResponse;
 import com.example.mybank.dto.responses.AuthResponse;
 import com.example.mybank.dto.responses.UserResponse;
+import com.example.mybank.entity.Account;
 import com.example.mybank.entity.User;
 import org.springframework.stereotype.Component;
 
@@ -35,13 +37,20 @@ public class UserMapper {
         );
     }
 
-    public AuthResponse toAuthResponse(String token,long expirationMs, User user) {
-        UserResponse userResponse = toUserResponse(user);
+    public AuthResponse toAuthResponse(String token,long expirationMs, User user, Account account) {
+        AccountSummaryResponse accountSummaryResponse = new AccountSummaryResponse(
+                account.getAccountNumber(),
+                account.getBalance(),
+                account.getCurrency(),
+                account.getType(),
+                account.getStatus(),
+                account.getTier()
+        );
         return new AuthResponse(
                 token,
-                "Bearer",
                 expirationMs,
-                userResponse
+                user.getEmail(),
+                accountSummaryResponse
         );
     }
 }
