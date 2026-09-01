@@ -6,27 +6,25 @@ import com.example.mybank.dto.responses.AuthResponse;
 import com.example.mybank.dto.responses.UserResponse;
 import com.example.mybank.entity.Account;
 import com.example.mybank.entity.User;
+import com.example.mybank.enums.UserRole;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UserMapper {
-    /*
-      Converts a RegisterRequest DTO to a User Entity.
-      Note: Expects the password to already be encoded before passing into this method,
-      or passed as the encoded hash parameter.
-     */
-    public User toEntity(RegisterRequest registerRequest, String encodedPassword) {
+
+    public User toEntity(RegisterRequest request, String hashedPassword) {
+        UserRole role = request.role() != null ? request.role() : UserRole.ROLE_USER;
+
+        // Order matched to User constructor: (email, passwordHash, firstName, lastName, role)
         return new User(
-                registerRequest.email(),
-                encodedPassword,
-                registerRequest.firstName(),
-                registerRequest.lastName()
+                request.email(),
+                hashedPassword,
+                request.firstName(),
+                request.lastName(),
+                role
         );
     }
-    /*
-      Converts a User Entity into a safe UserResponse DTO.
-      Strips away internal data like password hash.
-     */
+
     public UserResponse toUserResponse(User user) {
         return new UserResponse(
                 user.getId(),
@@ -37,7 +35,7 @@ public class UserMapper {
         );
     }
 
-    public AuthResponse toAuthResponse(String token,long expirationMs, User user, Account account) {
+    public AuthResponse toAuthResponse(String token, long expirationMs, User user, Account account) {
         AccountSummaryResponse accountSummaryResponse = new AccountSummaryResponse(
                 account.getAccountNumber(),
                 account.getBalance(),

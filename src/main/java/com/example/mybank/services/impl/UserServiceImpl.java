@@ -39,7 +39,7 @@ public class UserServiceImpl implements UserService {
     private final AccountRepository accountRepository;
     private final AccountNumberGenerator accountNumberGenerator;
 
-    @Value("${app.security.jwt.expiration-ms}")
+    @Value("${app.jwt.expiration}")
     private long jwtExpirationMs;
 
     public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, JwtTokenProvider jwtTokenProvider, AuthenticationManager authenticationManager, AccountRepository accountRepository, AccountNumberGenerator accountNumberGenerator) {
@@ -72,7 +72,7 @@ public class UserServiceImpl implements UserService {
         );
         Account savedAccount = accountRepository.save(account);
 
-        String token = jwtTokenProvider.generateToken(savedUser.getEmail());
+        String token = jwtTokenProvider.generateToken(savedUser);
         return userMapper.toAuthResponse(token,jwtExpirationMs, savedUser, savedAccount);
     }
 
@@ -89,10 +89,10 @@ public class UserServiceImpl implements UserService {
 
       User user = userRepository.findByEmail(loginRequest.email())
                 .orElseThrow(()-> (new UserNotFoundException("User email not found" + loginRequest.email())));
-      Account account = accountRepository.findById(user.getId())
+      Account account = accountRepository.findByUser(user)
               .orElseThrow(()-> (new UserNotFoundException("Account not found" + loginRequest.email())));
 
-      String token = jwtTokenProvider.generateToken(user.getEmail());
+      String token = jwtTokenProvider.generateToken(user);
       return userMapper.toAuthResponse(token,jwtExpirationMs, user,account);
     }
 }

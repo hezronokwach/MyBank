@@ -5,7 +5,7 @@ public record AuthResponse(
         String tokenType,
         long expiresInMs,
         String email,
-        AccountSummaryResponse account // 👈 Attached account context
+        AccountSummaryResponse account
 ) {
     public AuthResponse(String token, long expiresInMs, String email, AccountSummaryResponse account) {
         this(token, "Bearer", expiresInMs, email, account);

@@ -12,6 +12,7 @@ import java.util.List;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
+
     private final UserRepository userRepository;
 
     public CustomUserDetailsService(UserRepository userRepository) {
@@ -19,13 +20,22 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException{
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(()-> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+
+        // Format role name: Ensure it starts with "ROLE_"
+        String roleName = user.getRole().name();
+        if (!roleName.startsWith("ROLE_")) {
+            roleName = "ROLE_" + roleName;
+        }
+
+        List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(roleName));
+
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPasswordHash(),
-                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                authorities
         );
     }
 }
