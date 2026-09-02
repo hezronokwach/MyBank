@@ -5,7 +5,6 @@ import com.example.mybank.dto.responses.AccountResponse;
 import com.example.mybank.entity.Account;
 import com.example.mybank.entity.User;
 import com.example.mybank.exceptions.AccountNotFoundException;
-import com.example.mybank.exceptions.UnauthorizedException;
 import com.example.mybank.exceptions.UserNotFoundException;
 import com.example.mybank.mappers.AccountMapper;
 import com.example.mybank.repository.AccountRepository;
@@ -37,7 +36,7 @@ public class AccountServiceImpl implements AccountService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User email not found: " + email));
 
-        List<Account> accounts = accountRepository.findByUserId(user.getId());
+        List<Account> accounts = accountRepository.findByUserId(user.getUser_id());
         return accountMapper.toAccountResponseList(accounts);
     }
 
@@ -47,7 +46,7 @@ public class AccountServiceImpl implements AccountService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User email not found: " + email));
 
-        Account account = accountRepository.findByAccountNumberAndUserId(accountNumber, user.getId())
+        Account account = accountRepository.findByAccountNumberAndUserId(accountNumber, user.getUser_id())
                 .orElseThrow(() -> new AccountNotFoundException("Account " + accountNumber + " not found or does not belong to user"));
 
         return accountMapper.toAccountResponse(account);

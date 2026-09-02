@@ -61,7 +61,7 @@ public class User {
     
     // 3. GETTERS (All fields)
 
-    public UUID getId() {
+    public UUID getUser_id() {
         return user_id;
     }
 
