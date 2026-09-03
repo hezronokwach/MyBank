@@ -17,7 +17,7 @@ import com.example.mybank.repository.UserRepository;
 import com.example.mybank.security.JwtTokenProvider;
 import com.example.mybank.services.UserService;
 import com.example.mybank.util.AccountNumberGenerator;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -76,6 +76,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AuthResponse loginUser(LoginRequest loginRequest) {
       try {
           authenticationManager.authenticate(

@@ -25,7 +25,7 @@ public class GlobalExceptionHandler {
     {
         ErrorResponse errorPayload = new ErrorResponse(
                 LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
+                ex.getStatus().value(),
                 ex.getStatus().getReasonPhrase(),
                 ex.getMessage(),
                 request.getRequestURI()

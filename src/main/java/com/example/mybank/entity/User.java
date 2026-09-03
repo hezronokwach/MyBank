@@ -10,7 +10,8 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID user_id;
+    @Column(name = "user_id")
+    private UUID id;
 
     @Column(name = "email", nullable = false, unique = true)
     private String email;
@@ -61,8 +62,8 @@ public class User {
     
     // 3. GETTERS (All fields)
 
-    public UUID getUser_id() {
-        return user_id;
+    public UUID getId() {
+        return id;
     }
 
     public String getEmail() {

@@ -36,7 +36,7 @@ public class AccountServiceImpl implements AccountService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User email not found: " + email));
 
-        List<Account> accounts = accountRepository.findByUserId(user.getUser_id());
+        List<Account> accounts = accountRepository.findByUserId(user.getId());
         return accountMapper.toAccountResponseList(accounts);
     }
 
@@ -46,7 +46,7 @@ public class AccountServiceImpl implements AccountService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User email not found: " + email));
 
-        Account account = accountRepository.findByAccountNumberAndUserId(accountNumber, user.getUser_id())
+        Account account = accountRepository.findByAccountNumberAndUserId(accountNumber, user.getId())
                 .orElseThrow(() -> new AccountNotFoundException("Account " + accountNumber + " not found or does not belong to user"));
 
         return accountMapper.toAccountResponse(account);

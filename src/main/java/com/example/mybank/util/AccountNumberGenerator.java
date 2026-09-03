@@ -1,12 +1,12 @@
 package com.example.mybank.util;
 
 import org.springframework.stereotype.Component;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Component
 public class AccountNumberGenerator {
 
-    private final Random random = new Random();
+    private final SecureRandom random = new SecureRandom();
 
     /**
      * Generates a unique 10-digit bank account number starting with a fixed prefix.

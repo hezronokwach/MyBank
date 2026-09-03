@@ -6,7 +6,6 @@ import com.example.mybank.enums.AccountType;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalTime;
 
 public record AccountResponse(
         String accountNumber,
