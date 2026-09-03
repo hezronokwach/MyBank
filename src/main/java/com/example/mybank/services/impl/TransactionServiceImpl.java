@@ -7,10 +7,7 @@ import com.example.mybank.entity.User;
 import com.example.mybank.enums.AccountStatus;
 import com.example.mybank.enums.TransactionStatus;
 import com.example.mybank.enums.TransactionType;
-import com.example.mybank.exceptions.AccountNotFoundException;
-import com.example.mybank.exceptions.AccountStatusException;
-import com.example.mybank.exceptions.AmountException;
-import com.example.mybank.exceptions.UserNotFoundException;
+import com.example.mybank.exceptions.*;
 import com.example.mybank.mappers.TransactionMapper;
 import com.example.mybank.repository.AccountRepository;
 import com.example.mybank.repository.TransactionRespository;
@@ -56,7 +53,7 @@ public class TransactionServiceImpl implements TransactionService {
         account.setBalance(newBalance);
         accountRepository.save(account);
         Transaction transaction = new Transaction(
-                referenceGenerator.generate(),
+                referenceGenerator.generateDeposit(),
                 null,
                 account,
                 newBalance,
@@ -70,6 +67,32 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public TransactionResponse withdraw(String userEmail, String accountNumber, BigDecimal amount) {
-        return null;
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        Account account = accountRepository.findAndLockByAccountNumberAndUserId(accountNumber, user.getId())
+                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
+        if(account.getStatus() != AccountStatus.ACTIVE) {
+            throw new AccountStatusException("Account is not active") {
+            };
+        }
+        if (amount.signum() <= 0) {
+            throw new AmountException("Amount cannot be negative");
+        }
+        if(account.getBalance().compareTo(amount) <= 0) {
+            throw new InsufficientBalanceException("Insufficient balance");
+        }
+        BigDecimal newBalance = account.getBalance().subtract(amount);
+        account.setBalance(newBalance);
+        accountRepository.save(account);
+        Transaction transaction = new Transaction(
+                referenceGenerator.generateWithdrawal(),
+                null,
+                account,
+                newBalance,
+                TransactionType.WITHDRAWAL,
+                TransactionStatus.SUCCESS
+        );
+        transactionRespository.save(transaction);
+        return transactionMapper.toResponse(transaction, account.getAccountNumber(),newBalance);
     }
 }

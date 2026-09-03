@@ -1,7 +1,7 @@
 package com.example.mybank.controller;
 
 import com.example.mybank.dto.requests.AccountStatusUpdateRequest;
-import com.example.mybank.dto.requests.DepositRequest;
+import com.example.mybank.dto.requests.TransactionRequest;
 import com.example.mybank.dto.responses.AccountResponse;
 import com.example.mybank.dto.responses.TransactionResponse;
 import com.example.mybank.services.AccountService;
@@ -71,11 +71,23 @@ public class AccountController {
     @PreAuthorize("hasRole('USER', 'ADMIN')")
     public ResponseEntity<TransactionResponse> deposit(
             @PathVariable String accountNumber,
-            @Valid @RequestBody DepositRequest request,
+            @Valid @RequestBody TransactionRequest request,
             Authentication authentication
     ){
         String userEmail = authentication.getName();
         TransactionResponse transactionResponse = transactionService.deposit(userEmail,accountNumber, request.amount());
+        return ResponseEntity.ok(transactionResponse);
+    }
+
+    @PatchMapping("/{accountNumber}/withdrawals")
+    @PreAuthorize("hasRole('USER', 'ADMIN')")
+    public ResponseEntity<TransactionResponse> withdraw(
+            @PathVariable String accountNumber,
+            @Valid @RequestBody TransactionRequest request,
+            Authentication authentication
+    ){
+        String userEmail = authentication.getName();
+        TransactionResponse transactionResponse = transactionService.withdraw(userEmail,accountNumber, request.amount());
         return ResponseEntity.ok(transactionResponse);
     }
 }

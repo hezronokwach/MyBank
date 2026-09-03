@@ -13,9 +13,19 @@ public class ReferenceGenerator {
      * Generates a unique 10-digit bank account number starting with a fixed prefix.
      * Example output: "1009823471"
      */
-    public String generate() {
+    public String generateDeposit() {
         // Standard bank branch/type prefix (e.g., DEP)
         String prefix = "DEP";
+
+        // Generate remaining 7 random digits
+        int number = random.nextInt(9000000) + 1000000;
+
+        return prefix + number;
+    }
+
+    public String generateWithdrawal() {
+        // Standard bank branch/type prefix (e.g., DEP)
+        String prefix = "WDR";
 
         // Generate remaining 7 random digits
         int number = random.nextInt(9000000) + 1000000;
