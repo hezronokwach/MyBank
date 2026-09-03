@@ -22,4 +22,6 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     // Find a specific account owned by a user (Security-enforced lookup)
     Optional<Account> findByAccountNumberAndUserId(String accountNumber, UUID userId);
+
+    Optional<Account> findAndLockByAccountNumberAndUserId(String accountNumber, UUID userId);
 }

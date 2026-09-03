@@ -1,8 +1,11 @@
 package com.example.mybank.controller;
 
 import com.example.mybank.dto.requests.AccountStatusUpdateRequest;
+import com.example.mybank.dto.requests.DepositRequest;
 import com.example.mybank.dto.responses.AccountResponse;
+import com.example.mybank.dto.responses.TransactionResponse;
 import com.example.mybank.services.AccountService;
+import com.example.mybank.services.TransactionService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,9 +19,11 @@ import java.util.List;
 public class AccountController {
 
     private final AccountService accountService;
+    private final TransactionService transactionService;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, TransactionService transactionService) {
         this.accountService = accountService;
+        this.transactionService = transactionService;
     }
 
     /**
@@ -60,5 +65,17 @@ public class AccountController {
     ) {
         AccountResponse updatedAccount = accountService.updateAccountStatus(accountNumber, request);
         return ResponseEntity.ok(updatedAccount);
+    }
+
+    @PatchMapping("/{accountNumber}/deposits")
+    @PreAuthorize("hasRole('USER', 'ADMIN')")
+    public ResponseEntity<TransactionResponse> deposit(
+            @PathVariable String accountNumber,
+            @Valid @RequestBody DepositRequest request,
+            Authentication authentication
+    ){
+        String userEmail = authentication.getName();
+        TransactionResponse transactionResponse = transactionService.deposit(userEmail,accountNumber, request.amount());
+        return ResponseEntity.ok(transactionResponse);
     }
 }
