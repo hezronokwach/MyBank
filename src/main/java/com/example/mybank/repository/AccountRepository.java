@@ -24,4 +24,6 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     Optional<Account> findByAccountNumberAndUserId(String accountNumber, UUID userId);
 
     Optional<Account> findAndLockByAccountNumberAndUserId(String accountNumber, UUID userId);
+
+    Optional<Account> findAndLockByAccountNumber(String accountNumber);
 }

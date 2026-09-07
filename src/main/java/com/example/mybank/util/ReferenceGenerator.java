@@ -32,4 +32,14 @@ public class ReferenceGenerator {
 
         return prefix + number;
     }
+
+    public String generateTransfer() {
+        // Standard bank branch/type prefix (e.g., DEP)
+        String prefix = "TRN";
+
+        // Generate remaining 7 random digits
+        int number = random.nextInt(9000000) + 1000000;
+
+        return prefix + number;
+    }
 }

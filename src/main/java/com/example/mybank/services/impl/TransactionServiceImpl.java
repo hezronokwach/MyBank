@@ -10,7 +10,7 @@ import com.example.mybank.enums.TransactionType;
 import com.example.mybank.exceptions.*;
 import com.example.mybank.mappers.TransactionMapper;
 import com.example.mybank.repository.AccountRepository;
-import com.example.mybank.repository.TransactionRespository;
+import com.example.mybank.repository.TransactionRepository;
 import com.example.mybank.repository.UserRepository;
 import com.example.mybank.services.TransactionService;
 import com.example.mybank.util.ReferenceGenerator;
@@ -24,10 +24,10 @@ public class TransactionServiceImpl implements TransactionService {
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
     private final ReferenceGenerator referenceGenerator;
-    private final TransactionRespository transactionRespository;
+    private final TransactionRepository transactionRespository;
     private final TransactionMapper transactionMapper;
 
-    public TransactionServiceImpl(AccountRepository accountRepository, UserRepository userRepository, ReferenceGenerator referenceGenerator, TransactionRespository transactionRespository, TransactionMapper transactionMapper) {
+    public TransactionServiceImpl(AccountRepository accountRepository, UserRepository userRepository, ReferenceGenerator referenceGenerator, TransactionRepository transactionRespository, TransactionMapper transactionMapper) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.referenceGenerator = referenceGenerator;
@@ -56,7 +56,7 @@ public class TransactionServiceImpl implements TransactionService {
                 referenceGenerator.generateDeposit(),
                 null,
                 account,
-                newBalance,
+                amount,
                 TransactionType.DEPOSIT,
                 TransactionStatus.SUCCESS
         );
@@ -66,6 +66,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Transactional
     public TransactionResponse withdraw(String userEmail, String accountNumber, BigDecimal amount) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -86,9 +87,9 @@ public class TransactionServiceImpl implements TransactionService {
         accountRepository.save(account);
         Transaction transaction = new Transaction(
                 referenceGenerator.generateWithdrawal(),
-                null,
                 account,
-                newBalance,
+                null,
+                amount,
                 TransactionType.WITHDRAWAL,
                 TransactionStatus.SUCCESS
         );

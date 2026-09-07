@@ -2,10 +2,12 @@ package com.example.mybank.controller;
 
 import com.example.mybank.dto.requests.AccountStatusUpdateRequest;
 import com.example.mybank.dto.requests.TransactionRequest;
+import com.example.mybank.dto.requests.TransferRequest;
 import com.example.mybank.dto.responses.AccountResponse;
 import com.example.mybank.dto.responses.TransactionResponse;
 import com.example.mybank.services.AccountService;
 import com.example.mybank.services.TransactionService;
+import com.example.mybank.services.TransferService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,10 +22,12 @@ public class AccountController {
 
     private final AccountService accountService;
     private final TransactionService transactionService;
+    private final TransferService transferService;
 
-    public AccountController(AccountService accountService, TransactionService transactionService) {
+    public AccountController(AccountService accountService, TransactionService transactionService, TransferService transferService) {
         this.accountService = accountService;
         this.transactionService = transactionService;
+        this.transferService = transferService;
     }
 
     /**
@@ -90,4 +94,22 @@ public class AccountController {
         TransactionResponse transactionResponse = transactionService.withdraw(userEmail,accountNumber, request.amount());
         return ResponseEntity.ok(transactionResponse);
     }
+
+    @PatchMapping("/transfers")
+    @PreAuthorize("hasRole('USER', 'ADMIN')")
+    public ResponseEntity<TransactionResponse> transfers(
+            @RequestHeader("Idempotency-key") String idempotencyKey,
+            @Valid @RequestBody TransferRequest request,
+            Authentication authentication
+    ){
+        String userEmail = authentication.getName();
+        TransactionResponse transactionResponse = transferService.transfer(
+                userEmail,
+                request.fromAccountNumber(),
+                request.toAccountNumber(),
+                request.amount(),
+                idempotencyKey);
+        return ResponseEntity.ok(transactionResponse);
+    }
+
 }

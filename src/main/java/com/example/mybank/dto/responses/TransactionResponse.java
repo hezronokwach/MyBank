@@ -12,6 +12,6 @@ public record TransactionResponse(
         TransactionStatus status,
         BigDecimal amount,
         String accountNumber,
-        BigDecimal runningBalance,
+        BigDecimal amountPaid,
         Instant createdAt
 ) {}
