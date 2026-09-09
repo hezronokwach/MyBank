@@ -43,6 +43,17 @@ public class AccountController {
     }
 
     /**
+     * GET /api/v1/accounts
+     * Admin endpoint to list all accounts.
+     */
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AccountResponse>> getAllAccounts() {
+        List<AccountResponse> accounts = accountService.getAllAccounts();
+        return ResponseEntity.ok(accounts);
+    }
+
+    /**
      * GET /api/v1/accounts/{accountNumber}
      * Fetch a specific bank account owned by the authenticated user.
      */

@@ -9,4 +9,5 @@ public interface AccountService {
     List<AccountResponse> getMyAccounts(String email);
     AccountResponse getAccountByNumber(String email, String accountNumber);
     AccountResponse updateAccountStatus(String accountNumber, AccountStatusUpdateRequest request);
+    List<AccountResponse> getAllAccounts();
 }

@@ -68,4 +68,11 @@ public class AccountServiceImpl implements AccountService {
         Account updatedAccount = accountRepository.save(account);
         return accountMapper.toAccountResponse(updatedAccount);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AccountResponse> getAllAccounts() {
+        List<Account> accounts = accountRepository.findAll();
+        return accountMapper.toAccountResponseList(accounts);
+    }
 }

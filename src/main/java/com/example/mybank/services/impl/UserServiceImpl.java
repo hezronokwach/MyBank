@@ -95,4 +95,11 @@ public class UserServiceImpl implements UserService {
       String token = jwtTokenProvider.generateToken(user);
       return userMapper.toAuthResponse(token,jwtExpirationMs, user,account);
     }
+    @Override
+    @Transactional(readOnly = true)
+    public String getUserRoleByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        return user.getRole().name();
+    }
 }
