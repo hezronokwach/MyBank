@@ -27,7 +27,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    @Value("$app.react-url}")
+    @Value("${app.react-url}")
     String reactUrl;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
