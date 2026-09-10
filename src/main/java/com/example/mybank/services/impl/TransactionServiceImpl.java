@@ -43,8 +43,7 @@ public class TransactionServiceImpl implements TransactionService {
         Account account = accountRepository.findAndLockByAccountNumberAndUserId(accountNumber, user.getId())
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
         if(account.getStatus() != AccountStatus.ACTIVE) {
-            throw new AccountStatusException("Account is not active") {
-            };
+            throw new AccountStatusException("Account is not active");
         }
         if (amount.signum() <= 0) {
             throw new AmountException("Amount cannot be negative");
@@ -73,8 +72,7 @@ public class TransactionServiceImpl implements TransactionService {
         Account account = accountRepository.findAndLockByAccountNumberAndUserId(accountNumber, user.getId())
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
         if(account.getStatus() != AccountStatus.ACTIVE) {
-            throw new AccountStatusException("Account is not active") {
-            };
+            throw new AccountStatusException("Account is not active");
         }
         if (amount.signum() <= 0) {
             throw new AmountException("Amount cannot be negative");
