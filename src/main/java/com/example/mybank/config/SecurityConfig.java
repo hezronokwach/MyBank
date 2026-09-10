@@ -27,7 +27,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    @Value("${app.react-url}")
+    @Value("${FRONTEND_URL:${app.react-url:http://localhost:5173}}")
     String reactUrl;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
