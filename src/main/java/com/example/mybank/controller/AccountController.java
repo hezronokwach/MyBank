@@ -94,7 +94,7 @@ public class AccountController {
     }
 
     @PatchMapping("/{accountNumber}/deposits")
-    @PreAuthorize("hasRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<TransactionResponse> deposit(
             @PathVariable String accountNumber,
             @Valid @RequestBody TransactionRequest request,
@@ -106,7 +106,7 @@ public class AccountController {
     }
 
     @PatchMapping("/{accountNumber}/withdrawals")
-    @PreAuthorize("hasRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<TransactionResponse> withdraw(
             @PathVariable String accountNumber,
             @Valid @RequestBody TransactionRequest request,
@@ -118,7 +118,7 @@ public class AccountController {
     }
 
     @PatchMapping("/transfers")
-    @PreAuthorize("hasRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<TransactionResponse> transfers(
             @RequestHeader("Idempotency-key") String idempotencyKey,
             @Valid @RequestBody TransferRequest request,
