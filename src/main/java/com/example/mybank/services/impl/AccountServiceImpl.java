@@ -4,6 +4,7 @@ import com.example.mybank.dto.requests.AccountStatusUpdateRequest;
 import com.example.mybank.dto.responses.AccountResponse;
 import com.example.mybank.entity.Account;
 import com.example.mybank.entity.User;
+import com.example.mybank.enums.AccountType;
 import com.example.mybank.exceptions.AccountNotFoundException;
 import com.example.mybank.exceptions.UserNotFoundException;
 import com.example.mybank.mappers.AccountMapper;
@@ -64,6 +65,18 @@ public class AccountServiceImpl implements AccountService {
         if (request.tier() != null) {
             account.setTier(request.tier());
         }
+
+        Account updatedAccount = accountRepository.save(account);
+        return accountMapper.toAccountResponse(updatedAccount);
+    }
+
+    @Override
+    @Transactional
+    public AccountResponse updateAccountType(String accountNumber, AccountType type) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountNumber));
+
+        account.setType(type);
 
         Account updatedAccount = accountRepository.save(account);
         return accountMapper.toAccountResponse(updatedAccount);

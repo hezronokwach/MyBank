@@ -30,8 +30,8 @@ const Layout = ({ children }) => {
                     <div className="flex justify-between h-16 items-center">
                         <Link to="/dashboard" className="text-2xl font-bold text-indigo-600">MyBank</Link>
                         <div className="flex items-center gap-6">
-                            <Link to="/dashboard" className="text-gray-600 hover:text-indigo-600 transition font-medium">Dashboard</Link>
-                            {isAdmin && <Link to="/admin" className="text-gray-600 hover:text-indigo-600 transition font-medium">Admin Panel</Link>}
+                            <Link to="/dashboard" className="text-gray-800 hover:text-indigo-600 transition font-medium">Dashboard</Link>
+                            {isAdmin && <Link to="/admin" className="text-gray-800 hover:text-indigo-600 transition font-medium">Admin Panel</Link>}
                             <button onClick={handleLogout} className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition font-medium">Logout</button>
                         </div>
                     </div>

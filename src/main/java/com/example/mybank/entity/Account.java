@@ -116,6 +116,10 @@ public class Account {
         return type;
     }
 
+    public void setType(AccountType type) {
+        this.type = type;
+    }
+
     public AccountStatus getStatus() {
         return status;
     }

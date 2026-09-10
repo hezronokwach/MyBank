@@ -36,14 +36,17 @@ public class UserMapper {
     }
 
     public AuthResponse toAuthResponse(String token, long expirationMs, User user, Account account) {
-        AccountSummaryResponse accountSummaryResponse = new AccountSummaryResponse(
-                account.getAccountNumber(),
-                account.getBalance(),
-                account.getCurrency(),
-                account.getType(),
-                account.getStatus(),
-                account.getTier()
-        );
+        AccountSummaryResponse accountSummaryResponse = null;
+        if (account != null) {
+            accountSummaryResponse = new AccountSummaryResponse(
+                    account.getAccountNumber(),
+                    account.getBalance(),
+                    account.getCurrency(),
+                    account.getType(),
+                    account.getStatus(),
+                    account.getTier()
+            );
+        }
         return new AuthResponse(
                 token,
                 expirationMs,

@@ -25,7 +25,7 @@ const Dashboard = () => {
         <Layout>
             <div className="max-w-5xl mx-auto px-4 py-8">
                 <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Your Dashboard</h1>
+                    <h1 className="text-3xl font-extrabold text-bank-heading tracking-tight">Your Dashboard</h1>
                     <span className="text-sm text-gray-500 font-medium">Welcome back</span>
                 </div>
                 {account ? (

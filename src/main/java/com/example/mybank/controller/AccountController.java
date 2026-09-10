@@ -5,6 +5,7 @@ import com.example.mybank.dto.requests.TransactionRequest;
 import com.example.mybank.dto.requests.TransferRequest;
 import com.example.mybank.dto.responses.AccountResponse;
 import com.example.mybank.dto.responses.TransactionResponse;
+import com.example.mybank.enums.AccountType;
 import com.example.mybank.services.AccountService;
 import com.example.mybank.services.TransactionService;
 import com.example.mybank.services.TransferService;
@@ -79,6 +80,16 @@ public class AccountController {
             @Valid @RequestBody AccountStatusUpdateRequest request
     ) {
         AccountResponse updatedAccount = accountService.updateAccountStatus(accountNumber, request);
+        return ResponseEntity.ok(updatedAccount);
+    }
+
+    @PatchMapping("/{accountNumber}/type")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AccountResponse> updateAccountType(
+            @PathVariable String accountNumber,
+            @RequestBody AccountType type
+    ) {
+        AccountResponse updatedAccount = accountService.updateAccountType(accountNumber, type);
         return ResponseEntity.ok(updatedAccount);
     }
 

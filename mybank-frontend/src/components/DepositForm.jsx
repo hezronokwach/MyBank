@@ -16,7 +16,7 @@ const DepositForm = ({ accountNumber }) => {
 
     return (
         <form onSubmit={handleDeposit} className="max-w-sm p-6 bg-white rounded-lg shadow-md">
-            <h2 className="mb-4 text-xl font-bold">Deposit Funds</h2>
+            <h2 className="mb-4 text-xl font-bold text-bank-heading">Deposit Funds</h2>
             <input 
                 type="number" 
                 placeholder="Amount" 

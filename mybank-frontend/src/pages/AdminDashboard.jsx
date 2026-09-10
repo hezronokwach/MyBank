@@ -28,12 +28,24 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleUpdateType = async (accountNumber, type) => {
+        try {
+            await api.patch(`/accounts/${accountNumber}/type`, type, {
+                headers: { 'Content-Type': 'application/json' }
+            });
+            setAccounts(accounts.map(acc => acc.accountNumber === accountNumber ? { ...acc, type: type } : acc));
+        } catch (error) {
+            console.error('Failed to update account type', error);
+            alert('Failed to update account type');
+        }
+    };
+
     return (
         <Layout>
             <div className="max-w-6xl mx-auto px-4 py-8">
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Admin Panel</h1>
+                        <h1 className="text-3xl font-extrabold text-bank-heading tracking-tight">Admin Panel</h1>
                         <p className="text-gray-500 mt-1">Manage user accounts and verify statuses.</p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -47,6 +59,7 @@ const AdminDashboard = () => {
                             <tr>
                                 <th className="px-8 py-5 font-bold text-gray-500 uppercase tracking-wider text-xs">Account Details</th>
                                 <th className="px-8 py-5 font-bold text-gray-500 uppercase tracking-wider text-xs">Status</th>
+                                <th className="px-8 py-5 font-bold text-gray-500 uppercase tracking-wider text-xs">Type</th>
                                 <th className="px-8 py-5 font-bold text-gray-500 uppercase tracking-wider text-xs text-right">Actions</th>
                             </tr>
                         </thead>
@@ -54,13 +67,18 @@ const AdminDashboard = () => {
                             {accounts.map(account => (
                                 <tr key={account.accountNumber} className="hover:bg-gray-50/50 transition">
                                     <td className="px-8 py-5">
-                                        <p className="font-bold text-gray-900">{account.accountNumber}</p>
-                                        <p className="text-sm text-gray-500 capitalize">{account.type.toLowerCase()} account</p>
+                                        <p className="font-bold text-bank-text">{account.accountNumber}</p>
                                     </td>
                                     <td className="px-8 py-5">
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${account.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                                             {account.status}
                                         </span>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <select onChange={(e) => handleUpdateType(account.accountNumber, e.target.value)} defaultValue={account.type} className="text-sm border-gray-200 rounded-lg p-2">
+                                            <option value="CURRENT">Current</option>
+                                            <option value="SAVINGS">Savings</option>
+                                        </select>
                                     </td>
                                     <td className="px-8 py-5 text-right">
                                         {account.status !== 'ACTIVE' && (

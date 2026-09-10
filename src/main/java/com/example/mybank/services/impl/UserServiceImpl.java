@@ -8,6 +8,7 @@ import com.example.mybank.entity.User;
 import com.example.mybank.enums.AccountStatus;
 import com.example.mybank.enums.AccountTier;
 import com.example.mybank.enums.AccountType;
+import com.example.mybank.enums.UserRole;
 import com.example.mybank.exceptions.DuplicateResourceException;
 import com.example.mybank.exceptions.UnauthorizedException;
 import com.example.mybank.exceptions.UserNotFoundException;
@@ -89,8 +90,11 @@ public class UserServiceImpl implements UserService {
 
       User user = userRepository.findByEmail(loginRequest.email())
                 .orElseThrow(()-> (new UserNotFoundException("User email not found" + loginRequest.email())));
-      Account account = accountRepository.findByUser(user)
+      Account account = null;
+      if (user.getRole() != UserRole.ROLE_ADMIN) {
+          account = accountRepository.findByUser(user)
               .orElseThrow(()-> (new UserNotFoundException("Account not found" + loginRequest.email())));
+      }
 
       String token = jwtTokenProvider.generateToken(user);
       return userMapper.toAuthResponse(token,jwtExpirationMs, user,account);

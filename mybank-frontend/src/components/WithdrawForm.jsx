@@ -16,7 +16,7 @@ const WithdrawForm = ({ accountNumber }) => {
 
     return (
         <form onSubmit={handleWithdraw} className="max-w-sm p-6 bg-white rounded-lg shadow-md">
-            <h2 className="mb-4 text-xl font-bold">Withdraw Funds</h2>
+            <h2 className="mb-4 text-xl font-bold text-bank-heading">Withdraw Funds</h2>
             <input 
                 type="number" 
                 placeholder="Amount" 

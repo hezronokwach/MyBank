@@ -22,7 +22,7 @@ const TransferForm = () => {
 
     return (
         <form onSubmit={handleTransfer} className="max-w-md p-6 bg-white rounded-lg shadow-md">
-            <h2 className="mb-4 text-xl font-bold">Transfer Funds</h2>
+            <h2 className="mb-4 text-xl font-bold text-bank-heading">Transfer Funds</h2>
             <input 
                 type="text" 
                 placeholder="From Account" 
