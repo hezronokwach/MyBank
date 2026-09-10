@@ -1,50 +1,66 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import api from '../api/axiosInstance';
+import { useNavigate } from 'react-router-dom';
+import { useNotification } from './notificationContext';
 
 const TransferForm = () => {
     const [fromAccountNumber, setFromAccountNumber] = useState('');
     const [toAccountNumber, setToAccountNumber] = useState('');
     const [amount, setAmount] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const navigate = useNavigate();
+    const { notify } = useNotification();
     
     const handleTransfer = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
         try {
             const key = crypto.randomUUID();
             await api.patch('/transfers', 
                 { fromAccountNumber, toAccountNumber, amount },
                 { headers: { 'Idempotency-Key': key } }
             );
-            alert('Transfer successful');
+            notify('Transfer sent successfully. Your balance has been updated.');
+            navigate('/dashboard');
         } catch (error) {
-            alert('Transfer failed');
+            notify(error.response?.data?.message || 'We could not complete your transfer. Please check the details and try again.', 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <form onSubmit={handleTransfer} className="max-w-md p-6 bg-white rounded-lg shadow-md">
-            <h2 className="mb-4 text-xl font-bold text-bank-heading">Transfer Funds</h2>
+        <form onSubmit={handleTransfer} className="transaction-form">
+            <p className="eyebrow">Move money</p>
+            <h1>Transfer funds</h1>
+            <p className="form-intro">Send money between MyBank accounts securely.</p>
+            <label htmlFor="from-account">From account</label>
             <input 
+                id="from-account"
                 type="text" 
-                placeholder="From Account" 
                 value={fromAccountNumber}
                 onChange={(e) => setFromAccountNumber(e.target.value)}
-                className="w-full p-2 mb-3 border rounded" 
+                required
             />
+            <label htmlFor="to-account">To account</label>
             <input 
+                id="to-account"
                 type="text" 
-                placeholder="To Account" 
                 value={toAccountNumber}
                 onChange={(e) => setToAccountNumber(e.target.value)}
-                className="w-full p-2 mb-3 border rounded" 
+                required
             />
+            <label htmlFor="transfer-amount">Amount</label>
             <input 
+                id="transfer-amount"
                 type="number" 
-                placeholder="Amount" 
+                min="0.01"
+                step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full p-2 mb-4 border rounded" 
+                required
             />
-            <button type="submit" className="w-full p-2 text-white bg-blue-600 rounded hover:bg-blue-700">Send</button>
+            <button type="submit" className="button button--primary" disabled={isSubmitting}>{isSubmitting ? 'Sending…' : 'Send transfer'}</button>
         </form>
     );
 };

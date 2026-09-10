@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axiosInstance';
 
@@ -28,11 +28,11 @@ const Layout = ({ children }) => {
             <nav className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
-                        <Link to="/dashboard" className="text-2xl font-bold text-indigo-600">MyBank</Link>
+                        <Link to="/dashboard" className="brand">MyBank</Link>
                         <div className="flex items-center gap-6">
-                            <Link to="/dashboard" className="text-gray-800 hover:text-indigo-600 transition font-medium">Dashboard</Link>
-                            {isAdmin && <Link to="/admin" className="text-gray-800 hover:text-indigo-600 transition font-medium">Admin Panel</Link>}
-                            <button onClick={handleLogout} className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition font-medium">Logout</button>
+                            <Link to="/dashboard" className="text-slate-700 hover:text-[#183a62] transition font-medium">Dashboard</Link>
+                            {isAdmin && <Link to="/admin" className="text-slate-700 hover:text-[#183a62] transition font-medium">Admin Panel</Link>}
+                            <button onClick={handleLogout} className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition font-medium">Sign out</button>
                         </div>
                     </div>
                 </div>

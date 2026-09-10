@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import Layout from '../components/Layout';
@@ -59,9 +59,9 @@ const Dashboard = () => {
                 )}
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
-                    <button onClick={() => navigate('/transfer')} className="py-2.5 text-white bg-indigo-600 rounded hover:bg-indigo-700 transition font-semibold">Transfer</button>
-                    <button onClick={() => navigate('/deposit', { state: { accountNumber: account?.accountNumber } })} className="py-2.5 text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition font-semibold">Deposit</button>
-                    <button onClick={() => navigate('/withdraw', { state: { accountNumber: account?.accountNumber } })} className="py-2.5 text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition font-semibold">Withdraw</button>
+                    <button onClick={() => navigate('/transfer')} className="py-2.5 text-white bg-[#183a62] rounded hover:bg-[#102e50] transition font-semibold">Transfer</button>
+                    <button onClick={() => navigate('/deposit', { state: { accountNumber: account?.accountNumber } })} className="py-2.5 text-[#183a62] bg-white border border-slate-300 rounded hover:bg-slate-50 transition font-semibold">Deposit</button>
+                    <button onClick={() => navigate('/withdraw', { state: { accountNumber: account?.accountNumber } })} className="py-2.5 text-[#183a62] bg-white border border-slate-300 rounded hover:bg-slate-50 transition font-semibold">Withdraw</button>
                 </div>
             </div>
         </Layout>
