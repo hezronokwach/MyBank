@@ -18,17 +18,19 @@ function HomePage() {
       </div>
 
       <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow-sm border border-gray-200 text-left">
-        <h2 className="text-2xl font-semibold text-bank-heading mb-4">How to Run</h2>
-        <ol className="list-decimal list-inside text-bank-text space-y-2 mb-6">
-          <li>Run backend: <code className="bg-gray-100 px-1 rounded">./mvnw spring-boot:run</code></li>
-          <li>Run frontend: <code className="bg-gray-100 px-1 rounded">cd mybank-frontend && npm run dev</code></li>
-        </ol>
-        
-        <h2 className="text-2xl font-semibold text-bank-heading mb-4">Admin Access</h2>
-        <p className="text-bank-text mb-2">Use these credentials to test admin features:</p>
-        <div className="bg-gray-100 p-4 rounded-lg font-mono text-sm text-gray-800">
-          <p>Email: admin@mybank.com</p>
-          <p>Password: adminpassword</p>
+        <h2 className="text-2xl font-semibold text-bank-heading mb-4">Account Verification</h2>
+        <p className="text-bank-text mb-4">
+          For security and compliance, all new accounts are created with a pending status.
+        </p>
+        <p className="text-bank-text mb-4">
+          To activate your account, an administrator must review your registration. Once verified, you will gain full access to all banking features.
+        </p>
+        <p className="text-bank-text">
+          If you are evaluating this platform, you can test administrative features using the following credentials:
+        </p>
+        <div className="mt-4 bg-gray-100 p-4 rounded-lg font-mono text-sm text-gray-800">
+          <p>Admin Email: admin@mybank.com</p>
+          <p>Admin Password: adminpassword</p>
         </div>
       </div>
     </div>
