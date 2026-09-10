@@ -1,7 +1,5 @@
 package com.example.mybank.entity;
 
-import com.example.mybank.enums.AccountStatus;
-import com.example.mybank.enums.AccountType;
 import com.example.mybank.enums.TransactionStatus;
 import com.example.mybank.enums.TransactionType;
 import jakarta.persistence.*;
@@ -51,7 +49,7 @@ public class Transaction {
     /**
      * Required by JPA/Hibernate.
      */
-    protected Transaction() {
+    public Transaction() {
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.example.mybank.entity;
 
 import com.example.mybank.enums.AccountStatus;
+import com.example.mybank.enums.AccountTier;
 import com.example.mybank.enums.AccountType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -31,6 +32,14 @@ public class Account {
     @Column(nullable = false)
     private BigDecimal balance;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AccountStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AccountTier tier;
+
     @Column(nullable = false, length = 3)
     private String currency;
 
@@ -38,9 +47,6 @@ public class Account {
     @Column(nullable = false)
     private AccountType type;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AccountStatus status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -50,13 +56,23 @@ public class Account {
     }
 
     // 2. Parameterized constructor for creation
-    public Account(User user, String accountNumber, String currency, AccountType type) {
-        this.user = user;
+    // Constructor for provisioning a new account
+    public Account(
+            String accountNumber,
+            BigDecimal balance,
+            AccountStatus status,
+            AccountTier tier,
+            AccountType type,
+            String currency,
+            User user
+    ) {
         this.accountNumber = accountNumber;
-        this.currency = currency;
+        this.balance = balance;
+        this.status = status;
+        this.tier = tier;
         this.type = type;
-        this.balance = BigDecimal.ZERO; // Starting balance is zero
-        this.status = AccountStatus.ACTIVE;
+        this.currency = currency;
+        this.user = user;
     }
 
     @PrePersist
@@ -88,8 +104,20 @@ public class Account {
         return currency;
     }
 
+    public AccountTier getTier() {
+        return tier;
+    }
+
+    public void setTier(AccountTier tier) {
+        this.tier = tier;
+    }
+
     public AccountType getType() {
         return type;
+    }
+
+    public void setType(AccountType type) {
+        this.type = type;
     }
 
     public AccountStatus getStatus() {

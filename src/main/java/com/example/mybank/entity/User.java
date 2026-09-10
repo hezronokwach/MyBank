@@ -1,4 +1,5 @@
 package com.example.mybank.entity;
+import com.example.mybank.enums.UserRole;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
@@ -9,7 +10,8 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID user_id;
+    @Column(name = "user_id")
+    private UUID id;
 
     @Column(name = "email", nullable = false, unique = true)
     private String email;
@@ -25,6 +27,10 @@ public class User {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role = UserRole.ROLE_USER;
     
     // 1. CONSTRUCTORS
 
@@ -39,11 +45,12 @@ public class User {
      * Parameterized constructor for business logic / Mappers.
      * ID and createdAt are omitted because DB/JPA lifecycle hooks manage them.
      */
-    public User(String email, String passwordHash, String firstName, String lastName) {
+    public User(String email, String passwordHash, String firstName, String lastName, UserRole role) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.role = role;
     }
     
     // 2. LIFECYCLE HOOKS
@@ -56,7 +63,7 @@ public class User {
     // 3. GETTERS (All fields)
 
     public UUID getId() {
-        return user_id;
+        return id;
     }
 
     public String getEmail() {
@@ -79,7 +86,13 @@ public class User {
         return createdAt;
     }
 
-    // 4. SETTERS (Only mutable fields)
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
