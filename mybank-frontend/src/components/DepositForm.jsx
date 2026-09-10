@@ -7,7 +7,7 @@ const DepositForm = ({ accountNumber }) => {
     const handleDeposit = async (e) => {
         e.preventDefault();
         try {
-            await api.post(`/accounts/${accountNumber}/deposits`, { amount });
+            await api.patch(`/accounts/${accountNumber}/deposits`, { amount });
             alert('Deposit successful');
         } catch (error) {
             alert('Deposit failed');

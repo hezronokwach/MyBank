@@ -7,7 +7,7 @@ const WithdrawForm = ({ accountNumber }) => {
     const handleWithdraw = async (e) => {
         e.preventDefault();
         try {
-            await api.post(`/accounts/${accountNumber}/withdrawals`, { amount });
+            await api.patch(`/accounts/${accountNumber}/withdrawals`, { amount });
             alert('Withdraw successful');
         } catch (error) {
             alert('Withdraw failed');
