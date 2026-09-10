@@ -1,41 +1,54 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axiosInstance';
+import { useNotification } from './notificationContext';
 
 const LoginForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
+    const { notify } = useNotification();
     
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
         try {
             const response = await api.post('/auth/login', { email, password });
             localStorage.setItem('jwt', response.data.token);
             navigate('/dashboard');
         } catch (error) {
-            alert('Login failed');
+            notify(error.response?.data?.message || 'We could not sign you in. Check your email and password.', 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="max-w-sm p-6 bg-white rounded-lg shadow-md">
-            <h2 className="mb-4 text-2xl font-bold text-bank-heading">Login</h2>
+        <form onSubmit={handleSubmit} className="auth-form">
+            <p className="eyebrow">MyBank</p>
+            <h1>Welcome back</h1>
+            <p className="form-intro">Sign in to manage your accounts securely.</p>
+            <label htmlFor="login-email">Email address</label>
             <input 
+                id="login-email"
                 type="email" 
-                placeholder="Email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-2 mb-4 border rounded" 
+                autoComplete="email"
+                required
             />
+            <label htmlFor="login-password">Password</label>
             <input 
+                id="login-password"
                 type="password" 
-                placeholder="Password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-2 mb-4 border rounded" 
+                autoComplete="current-password"
+                required
             />
-            <button type="submit" className="w-full p-2 text-white bg-blue-600 rounded hover:bg-blue-700">Login</button>
+            <button type="submit" className="button button--primary" disabled={isSubmitting}>{isSubmitting ? 'Signing in…' : 'Sign in'}</button>
+            <p className="form-switch">New to MyBank? <Link to="/register">Create an account</Link></p>
         </form>
     );
 };

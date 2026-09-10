@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -8,10 +7,12 @@ import AdminDashboard from './pages/AdminDashboard';
 import TransferPage from './pages/TransferPage';
 import DepositPage from './pages/DepositPage';
 import WithdrawPage from './pages/WithdrawPage';
+import { NotificationProvider } from './components/NotificationProvider';
 
 function App() {
   return (
     <BrowserRouter>
+      <NotificationProvider>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -22,6 +23,7 @@ function App() {
         <Route path="/deposit" element={<DepositPage />} />
         <Route path="/withdraw" element={<WithdrawPage />} />
       </Routes>
+      </NotificationProvider>
     </BrowserRouter>
   );
 }

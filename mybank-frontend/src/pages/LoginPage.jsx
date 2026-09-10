@@ -1,9 +1,10 @@
-import React from 'react';
 import LoginForm from '../components/LoginForm';
+import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="auth-page">
+            <Link to="/" className="brand">MyBank</Link>
             <LoginForm />
         </div>
     );

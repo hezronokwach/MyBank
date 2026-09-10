@@ -1,30 +1,45 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import api from '../api/axiosInstance';
+import { useNavigate } from 'react-router-dom';
+import { useNotification } from './notificationContext';
 
 const DepositForm = ({ accountNumber }) => {
     const [amount, setAmount] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const navigate = useNavigate();
+    const { notify } = useNotification();
     
     const handleDeposit = async (e) => {
         e.preventDefault();
+        if (!accountNumber) return navigate('/dashboard');
+        setIsSubmitting(true);
         try {
             await api.patch(`/accounts/${accountNumber}/deposits`, { amount });
-            alert('Deposit successful');
+            notify('Deposit completed. Your balance has been updated.');
+            navigate('/dashboard');
         } catch (error) {
-            alert('Deposit failed');
+            notify(error.response?.data?.message || 'We could not complete your deposit. Please try again.', 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <form onSubmit={handleDeposit} className="max-w-sm p-6 bg-white rounded-lg shadow-md">
-            <h2 className="mb-4 text-xl font-bold text-bank-heading">Deposit Funds</h2>
+        <form onSubmit={handleDeposit} className="transaction-form">
+            <p className="eyebrow">Add money</p>
+            <h1>Deposit funds</h1>
+            <p className="form-intro">Enter the amount you would like to add to this account.</p>
+            <label htmlFor="deposit-amount">Amount</label>
             <input 
+                id="deposit-amount"
                 type="number" 
-                placeholder="Amount" 
+                min="0.01"
+                step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full p-2 mb-4 border rounded" 
+                required
             />
-            <button type="submit" className="w-full p-2 text-white bg-green-600 rounded hover:bg-green-700">Deposit</button>
+            <button type="submit" className="button button--primary" disabled={isSubmitting}>{isSubmitting ? 'Processing…' : 'Deposit funds'}</button>
         </form>
     );
 };
