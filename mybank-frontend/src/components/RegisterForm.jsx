@@ -8,6 +8,7 @@ const RegisterForm = () => {
     const [password, setPassword] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
+    const [pin, setPin] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
     const { notify } = useNotification();
@@ -16,7 +17,7 @@ const RegisterForm = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await api.post('/auth/register', { email, password, firstName, lastName, role: 'ROLE_USER' });
+            await api.post('/auth/register', { email, password, firstName, lastName, pin, role: 'ROLE_USER' });
             notify('Account created. Sign in to continue.');
             navigate('/login');
         } catch (error) {
@@ -43,6 +44,8 @@ const RegisterForm = () => {
             <input id="register-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
             <label htmlFor="register-password">Password</label>
             <input id="register-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
+            <label htmlFor="register-pin">PIN</label>
+            <input id="register-pin" type="password" value={pin} onChange={(e) => setPin(e.target.value)} maxLength="4" required />
             <button type="submit" className="button button--primary" disabled={isSubmitting}>{isSubmitting ? 'Creating account…' : 'Create account'}</button>
             <p className="form-switch">Already have an account? <Link to="/login">Sign in</Link></p>
         </form>

@@ -15,6 +15,8 @@ public record TransferRequest(
 
         @NotNull(message = "Transfer amount is required")
         @DecimalMin(value = "0.01", message = "Transfer amount must be at least 0.01")
-        BigDecimal amount
+        BigDecimal amount,
+        @NotBlank(message = "PIN is required")
+        String pin
 ) {
 }

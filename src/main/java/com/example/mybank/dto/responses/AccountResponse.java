@@ -11,9 +11,11 @@ public record AccountResponse(
         String accountNumber,
         BigDecimal balance,
         String currency,
+        String phoneNumber,
         AccountType type,
         AccountStatus status,
         AccountTier tier,
-        Instant createdAt
+        Instant createdAt,
+        String interestInfo
 ) {
 }

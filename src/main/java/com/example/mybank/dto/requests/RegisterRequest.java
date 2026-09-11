@@ -20,6 +20,9 @@ public record RegisterRequest(
         @NotBlank(message = "Last name is required")
         String lastName,
 
+        @NotBlank(message = "PIN is required")
+        String pin,
+
         UserRole role
 ) {
 }

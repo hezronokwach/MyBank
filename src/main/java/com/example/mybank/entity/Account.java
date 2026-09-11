@@ -43,6 +43,12 @@ public class Account {
     @Column(nullable = false, length = 3)
     private String currency;
 
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    @Column(name = "pin", nullable = false)
+    private String pin;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AccountType type;
@@ -64,7 +70,8 @@ public class Account {
             AccountTier tier,
             AccountType type,
             String currency,
-            User user
+            User user,
+            String pin
     ) {
         this.accountNumber = accountNumber;
         this.balance = balance;
@@ -73,6 +80,7 @@ public class Account {
         this.type = type;
         this.currency = currency;
         this.user = user;
+        this.pin = pin;
     }
 
     @PrePersist
@@ -92,6 +100,10 @@ public class Account {
         return user;
     }
 
+    public void setUser(User user) {
+        this.user = user;
+    }
+
     public String getAccountNumber() {
         return accountNumber;
     }
@@ -102,6 +114,22 @@ public class Account {
 
     public String getCurrency() {
         return currency;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getPin() {
+        return pin;
+    }
+
+    public void setPin(String pin) {
+        this.pin = pin;
     }
 
     public AccountTier getTier() {

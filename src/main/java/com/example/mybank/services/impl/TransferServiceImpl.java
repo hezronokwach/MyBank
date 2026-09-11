@@ -6,6 +6,7 @@ import com.example.mybank.entity.IdempotencyKey;
 import com.example.mybank.entity.Transaction;
 import com.example.mybank.entity.User;
 import com.example.mybank.enums.AccountStatus;
+import com.example.mybank.enums.AccountType;
 import com.example.mybank.enums.TransactionStatus;
 import com.example.mybank.enums.TransactionType;
 import com.example.mybank.exceptions.*;
@@ -17,6 +18,7 @@ import com.example.mybank.repository.UserRepository;
 import com.example.mybank.services.TransferService;
 import com.example.mybank.util.ReferenceGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,8 +35,9 @@ public class TransferServiceImpl implements TransferService {
     private final TransactionMapper transactionMapper;
     private final IdempotencyRepository idempotencyRepository;
     private final ObjectMapper objectMapper;
+    private final PasswordEncoder passwordEncoder;
 
-    public TransferServiceImpl(AccountRepository accountRepository, TransactionRepository transactionRepository, UserRepository userRepository, ReferenceGenerator referenceGenerator, TransactionMapper transactionMapper, IdempotencyRepository idempotencyRepository, ObjectMapper objectMapper) {
+    public TransferServiceImpl(AccountRepository accountRepository, TransactionRepository transactionRepository, UserRepository userRepository, ReferenceGenerator referenceGenerator, TransactionMapper transactionMapper, IdempotencyRepository idempotencyRepository, ObjectMapper objectMapper, PasswordEncoder passwordEncoder) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
@@ -42,11 +45,12 @@ public class TransferServiceImpl implements TransferService {
         this.transactionMapper = transactionMapper;
         this.idempotencyRepository = idempotencyRepository;
         this.objectMapper = objectMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     @Transactional
-    public TransactionResponse transfer(String email, String fromAccountNumber, String toAccountNumber, BigDecimal amount, String idempotencyKey) {
+    public TransactionResponse transfer(String email, String fromAccountNumber, String toAccountNumber, BigDecimal amount, String idempotencyKey, String pin) {
         Optional<IdempotencyKey> existingKey = idempotencyRepository.findByIdempotencyKey(idempotencyKey);
         if (existingKey.isPresent()) {
             try {
@@ -74,12 +78,19 @@ public class TransferServiceImpl implements TransferService {
             fromAccount = accountRepository.findAndLockByAccountNumberAndUserId(fromAccountNumber, user.getId())
                     .orElseThrow(()-> new AccountNotFoundException("Account not found"));
         }
+        
+        if (!passwordEncoder.matches(pin, fromAccount.getPin())) {
+            throw new UnauthorizedException("Invalid PIN");
+        }
 
         if(fromAccount.equals(toAccount)) {
             throw new SelfTransferException("Cannot transfer to same account");
         }
         if (fromAccount.getStatus() != AccountStatus.ACTIVE){
             throw new AccountStatusException("Account not active");
+        }
+        if (fromAccount.getType() == AccountType.FIXED_01 || fromAccount.getType() == AccountType.FIXED_02 || fromAccount.getType() == AccountType.FIXED_03) {
+            throw new TransactionNotAllowedException("Transactions not allowed for fixed accounts");
         }
         if (toAccount.getStatus() != AccountStatus.ACTIVE){
             throw new AccountStatusException("Account not active");

@@ -7,6 +7,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import TransferPage from './pages/TransferPage';
 import DepositPage from './pages/DepositPage';
 import WithdrawPage from './pages/WithdrawPage';
+import CreateAccountPage from './pages/CreateAccountPage';
+import TransferOwnershipPage from './pages/TransferOwnershipPage';
+import DeleteAccountPage from './pages/DeleteAccountPage';
 import { NotificationProvider } from './components/NotificationProvider';
 
 function App() {
@@ -22,6 +25,9 @@ function App() {
         <Route path="/transfer" element={<TransferPage />} />
         <Route path="/deposit" element={<DepositPage />} />
         <Route path="/withdraw" element={<WithdrawPage />} />
+        <Route path="/create-account" element={<CreateAccountPage />} />
+        <Route path="/transfer-ownership" element={<TransferOwnershipPage />} />
+        <Route path="/delete-account" element={<DeleteAccountPage />} />
       </Routes>
       </NotificationProvider>
     </BrowserRouter>
