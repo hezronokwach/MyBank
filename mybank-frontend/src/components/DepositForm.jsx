@@ -5,6 +5,7 @@ import { useNotification } from './notificationContext';
 
 const DepositForm = ({ accountNumber }) => {
     const [amount, setAmount] = useState('');
+    const [pin, setPin] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
     const { notify } = useNotification();
@@ -14,7 +15,7 @@ const DepositForm = ({ accountNumber }) => {
         if (!accountNumber) return navigate('/dashboard');
         setIsSubmitting(true);
         try {
-            await api.patch(`/accounts/${accountNumber}/deposits`, { amount });
+            await api.patch(`/accounts/${accountNumber}/deposits`, { amount, pin });
             notify('Deposit completed. Your balance has been updated.');
             navigate('/dashboard');
         } catch (error) {
@@ -37,6 +38,15 @@ const DepositForm = ({ accountNumber }) => {
                 step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                required
+            />
+            <label htmlFor="deposit-pin">PIN</label>
+            <input 
+                id="deposit-pin"
+                type="password" 
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                maxLength="4"
                 required
             />
             <button type="submit" className="button button--primary" disabled={isSubmitting}>{isSubmitting ? 'Processing…' : 'Deposit funds'}</button>

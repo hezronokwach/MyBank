@@ -1,7 +1,11 @@
 package com.example.mybank.controller;
 
 import com.example.mybank.dto.requests.AccountStatusUpdateRequest;
+import com.example.mybank.dto.requests.AccountUpdateInfoRequest;
+import com.example.mybank.dto.requests.CreateAccountRequest;
+import com.example.mybank.dto.requests.PinRequest;
 import com.example.mybank.dto.requests.TransactionRequest;
+import com.example.mybank.dto.requests.TransferOwnershipRequest;
 import com.example.mybank.dto.requests.TransferRequest;
 import com.example.mybank.dto.responses.AccountResponse;
 import com.example.mybank.dto.responses.TransactionResponse;
@@ -10,6 +14,7 @@ import com.example.mybank.services.AccountService;
 import com.example.mybank.services.TransactionService;
 import com.example.mybank.services.TransferService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -54,6 +59,17 @@ public class AccountController {
         return ResponseEntity.ok(accounts);
     }
 
+    @PostMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<AccountResponse> createAccount(
+            Authentication authentication,
+            @Valid @RequestBody CreateAccountRequest request
+    ) {
+        String userEmail = authentication.getName();
+        AccountResponse account = accountService.createAccount(userEmail, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(account);
+    }
+
     /**
      * GET /api/v1/accounts/{accountNumber}
      * Fetch a specific bank account owned by the authenticated user.
@@ -93,6 +109,42 @@ public class AccountController {
         return ResponseEntity.ok(updatedAccount);
     }
 
+    @PatchMapping("/{accountNumber}/details")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<AccountResponse> updateAccountDetails(
+            @PathVariable String accountNumber,
+            @Valid @RequestBody AccountUpdateInfoRequest request,
+            Authentication authentication
+    ) {
+        String userEmail = authentication.getName();
+        AccountResponse updatedAccount = accountService.updateAccountDetails(userEmail, accountNumber, request);
+        return ResponseEntity.ok(updatedAccount);
+    }
+
+    @DeleteMapping("/{accountNumber}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<Void> deleteAccount(
+            @PathVariable String accountNumber,
+            @Valid @RequestBody PinRequest request,
+            Authentication authentication
+    ) {
+        String userEmail = authentication.getName();
+        accountService.deleteAccount(userEmail, accountNumber, request.pin());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{accountNumber}/transfer")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<AccountResponse> transferAccountOwner(
+            @PathVariable String accountNumber,
+            @Valid @RequestBody TransferOwnershipRequest request,
+            Authentication authentication
+    ) {
+        String userEmail = authentication.getName();
+        AccountResponse updatedAccount = accountService.transferAccountOwner(userEmail, accountNumber, request.newOwnerEmail(), request.pin());
+        return ResponseEntity.ok(updatedAccount);
+    }
+
     @PatchMapping("/{accountNumber}/deposits")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<TransactionResponse> deposit(
@@ -101,7 +153,7 @@ public class AccountController {
             Authentication authentication
     ){
         String userEmail = authentication.getName();
-        TransactionResponse transactionResponse = transactionService.deposit(userEmail,accountNumber, request.amount());
+        TransactionResponse transactionResponse = transactionService.deposit(userEmail, accountNumber, request.amount(), request.pin());
         return ResponseEntity.ok(transactionResponse);
     }
 
@@ -113,7 +165,7 @@ public class AccountController {
             Authentication authentication
     ){
         String userEmail = authentication.getName();
-        TransactionResponse transactionResponse = transactionService.withdraw(userEmail,accountNumber, request.amount());
+        TransactionResponse transactionResponse = transactionService.withdraw(userEmail, accountNumber, request.amount(), request.pin());
         return ResponseEntity.ok(transactionResponse);
     }
 
@@ -130,7 +182,8 @@ public class AccountController {
                 request.fromAccountNumber(),
                 request.toAccountNumber(),
                 request.amount(),
-                idempotencyKey);
+                idempotencyKey,
+                request.pin());
         return ResponseEntity.ok(transactionResponse);
     }
 

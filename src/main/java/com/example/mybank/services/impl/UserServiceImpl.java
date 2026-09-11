@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -59,6 +60,7 @@ public class UserServiceImpl implements UserService {
             throw new DuplicateResourceException("Email already exists" + registerRequest.email());
         }
         String hashedPassword = passwordEncoder.encode(registerRequest.password());
+        String hashedPin = passwordEncoder.encode(registerRequest.pin());
         User userEntity = userMapper.toEntity(registerRequest, hashedPassword);
         User savedUser = userRepository.save(userEntity);
         Account account = new Account (
@@ -68,7 +70,8 @@ public class UserServiceImpl implements UserService {
                 AccountTier.TIER_1_UNVERIFIED,
                 AccountType.CURRENT,
                 "KES",
-                savedUser
+                savedUser,
+                hashedPin
         );
         Account savedAccount = accountRepository.save(account);
 
@@ -92,8 +95,11 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(()-> (new UserNotFoundException("User email not found" + loginRequest.email())));
       Account account = null;
       if (user.getRole() != UserRole.ROLE_ADMIN) {
-          account = accountRepository.findByUser(user)
-              .orElseThrow(()-> (new UserNotFoundException("Account not found" + loginRequest.email())));
+          List<Account> accounts = accountRepository.findByUserId(user.getId());
+          if (accounts.isEmpty()) {
+              throw new UserNotFoundException("Account not found" + loginRequest.email());
+          }
+          account = accounts.get(0);
       }
 
       String token = jwtTokenProvider.generateToken(user);
