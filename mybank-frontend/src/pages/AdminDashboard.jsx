@@ -78,6 +78,9 @@ const AdminDashboard = () => {
                                         <select onChange={(e) => handleUpdateType(account.accountNumber, e.target.value)} defaultValue={account.type} className="text-sm border-gray-200 rounded-lg p-2">
                                             <option value="CURRENT">Current</option>
                                             <option value="SAVINGS">Savings</option>
+                                            <option value="FIXED_01">Fixed 01</option>
+                                            <option value="FIXED_02">Fixed 02</option>
+                                            <option value="FIXED_03">Fixed 03</option>
                                         </select>
                                     </td>
                                     <td className="px-8 py-5 text-right">

@@ -52,8 +52,10 @@ public class TransactionServiceImpl implements TransactionService {
         if(account.getStatus() != AccountStatus.ACTIVE) {
             throw new AccountStatusException("Account is not active");
         }
-        if (account.getType() == AccountType.FIXED_01 || account.getType() == AccountType.FIXED_02 || account.getType() == AccountType.FIXED_03) {
-            throw new TransactionNotAllowedException("Transactions not allowed for fixed accounts");
+        if (account.getType().name().startsWith("FIXED")) {
+            if (transactionRespository.existsByToAccountAndType(account, TransactionType.DEPOSIT)) {
+                throw new TransactionNotAllowedException("Fixed accounts only allow one deposit");
+            }
         }
         if (amount.signum() <= 0) {
             throw new AmountException("Amount cannot be negative");
