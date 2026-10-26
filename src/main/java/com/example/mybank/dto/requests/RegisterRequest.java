@@ -1,6 +1,5 @@
 package com.example.mybank.dto.requests;
 
-import com.example.mybank.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -21,8 +20,6 @@ public record RegisterRequest(
         String lastName,
 
         @NotBlank(message = "PIN is required")
-        String pin,
-
-        UserRole role
+        String pin
 ) {
 }
