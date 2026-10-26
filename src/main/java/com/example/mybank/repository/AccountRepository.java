@@ -2,7 +2,9 @@ package com.example.mybank.repository;
 
 import com.example.mybank.entity.Account;
 import com.example.mybank.entity.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -23,7 +25,10 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     // Find a specific account owned by a user (Security-enforced lookup)
     Optional<Account> findByAccountNumberAndUserId(String accountNumber, UUID userId);
 
+    // SELECT ... FOR UPDATE: callers must run inside a transaction
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Account> findAndLockByAccountNumberAndUserId(String accountNumber, UUID userId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Account> findAndLockByAccountNumber(String accountNumber);
 }

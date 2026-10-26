@@ -13,15 +13,14 @@ import org.springframework.stereotype.Component;
 public class UserMapper {
 
     public User toEntity(RegisterRequest request, String hashedPassword) {
-        UserRole role = request.role() != null ? request.role() : UserRole.ROLE_USER;
-
+        // Self-registration always creates a regular user; admins are provisioned server-side
         // Order matched to User constructor: (email, passwordHash, firstName, lastName, role)
         return new User(
                 request.email(),
                 hashedPassword,
                 request.firstName(),
                 request.lastName(),
-                role
+                UserRole.ROLE_USER
         );
     }
 

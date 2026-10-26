@@ -17,7 +17,7 @@ const RegisterForm = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await api.post('/auth/register', { email, password, firstName, lastName, pin, role: 'ROLE_USER' });
+            await api.post('/auth/register', { email, password, firstName, lastName, pin });
             notify('Account created. Sign in to continue.');
             navigate('/login');
         } catch (error) {
