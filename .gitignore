@@ -34,3 +34,9 @@ build/
 
 ### Local Config ###
 src/main/resources/application-dev.properties
+
+# Local database credentials - never commit
+**/application-local*.properties
+.env
+.env.*
+!.env.example
