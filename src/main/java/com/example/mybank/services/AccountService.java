@@ -18,4 +18,5 @@ public interface AccountService {
     void deleteAccount(String email, String accountNumber, String pin);
     AccountResponse transferAccountOwner(String email, String accountNumber, String newOwnerEmail, String pin);
     List<AccountResponse> getAllAccounts();
+    AccountResponse freezeMyAccount(String email, String accountNumber, String reason);
 }
