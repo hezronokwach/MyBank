@@ -10,6 +10,7 @@ import com.example.mybank.enums.AccountStatus;
 import com.example.mybank.enums.AccountTier;
 import com.example.mybank.enums.AccountType;
 import com.example.mybank.exceptions.AccountNotFoundException;
+import com.example.mybank.exceptions.AccountStatusException;
 import com.example.mybank.exceptions.UnauthorizedException;
 import com.example.mybank.exceptions.UserNotFoundException;
 import com.example.mybank.mappers.AccountMapper;
@@ -17,6 +18,8 @@ import com.example.mybank.repository.AccountRepository;
 import com.example.mybank.repository.UserRepository;
 import com.example.mybank.services.AccountService;
 import com.example.mybank.util.AccountNumberGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +29,8 @@ import java.util.List;
 
 @Service
 public class AccountServiceImpl implements AccountService {
+
+    private static final Logger log = LoggerFactory.getLogger(AccountServiceImpl.class);
 
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
@@ -175,5 +180,26 @@ public class AccountServiceImpl implements AccountService {
     public List<AccountResponse> getAllAccounts() {
         List<Account> accounts = accountRepository.findAll();
         return accountMapper.toAccountResponseList(accounts);
+    }
+
+    @Override
+    @Transactional
+    public AccountResponse freezeMyAccount(String email, String accountNumber, String reason) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User email not found: " + email));
+
+        // Lock the row so a deposit or transfer can't run against the account while it is being frozen
+        Account account = accountRepository.findAndLockByAccountNumberAndUserId(accountNumber, user.getId())
+                .orElseThrow(() -> new AccountNotFoundException("Account " + accountNumber + " not found or does not belong to user"));
+
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            throw new AccountStatusException("Only active accounts can be frozen");
+        }
+
+        // Unfreezing stays admin-only, through updateAccountStatus
+        account.setStatus(AccountStatus.FROZEN);
+        Account frozenAccount = accountRepository.save(account);
+        log.info("Account {} frozen by its owner, reason: {}", accountNumber, reason);
+        return accountMapper.toAccountResponse(frozenAccount);
     }
 }
