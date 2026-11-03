@@ -35,8 +35,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -102,7 +104,11 @@ class AssistantToolsTest {
         assertThat(result.status()).isEqualTo(ToolOutcome.OK);
         @SuppressWarnings("unchecked")
         List<AccountView> accounts = (List<AccountView>) result.data();
-        assertThat(accounts).extracting(AccountView::account).containsExactlyInAnyOrder("...4821", "...9310");
+        List<String> maskedNumbers = new ArrayList<>();
+        for (AccountView account : accounts) {
+            maskedNumbers.add(account.account());
+        }
+        assertThat(maskedNumbers).containsExactlyInAnyOrder("...4821", "...9310");
 
         String json = objectMapper.writeValueAsString(result);
         assertThat(json).doesNotContain("1000004821", "1000007777", "99999", WANJIKU, "Wanjiku", "Kamau", "pin-hash");
@@ -158,8 +164,13 @@ class AssistantToolsTest {
 
         assertThat(transactionsOf(defaultLimit)).hasSize(5);
         assertThat(transactionsOf(tooMany)).hasSize(20);
-        TransactionView transfer = transactionsOf(tooMany).stream()
-                .filter(t -> t.reference().equals("TRN1000001")).findFirst().orElseThrow();
+        TransactionView transfer = null;
+        for (TransactionView transaction : transactionsOf(tooMany)) {
+            if (transaction.reference().equals("TRN1000001")) {
+                transfer = transaction;
+            }
+        }
+        assertThat(transfer).isNotNull();
         assertThat(transfer.direction()).isEqualTo(TransactionDirection.IN);
         assertThat(transfer.counterparty()).isEqualTo("...7777");
         assertThat(transfer.currency()).isEqualTo("KES");
@@ -210,13 +221,18 @@ class AssistantToolsTest {
         tools.getAccount("9310");
 
         List<AssistantToolCall> calls = toolCalls.findByUserIdOrderByCreatedAtAsc(wanjiku.getId());
-        assertThat(calls).extracting(AssistantToolCall::getToolName).containsExactly("listMyAccounts", "getAccount");
-        assertThat(calls).allSatisfy(call -> {
+        assertThat(calls).hasSize(2);
+        assertThat(calls.get(0).getToolName()).isEqualTo("listMyAccounts");
+        assertThat(calls.get(1).getToolName()).isEqualTo("getAccount");
+
+        List<UUID> savedIds = new ArrayList<>();
+        for (AssistantToolCall call : calls) {
             assertThat(call.getMessageId()).isNull();
             assertThat(call.getDurationMs()).isGreaterThanOrEqualTo(0);
             assertThat(call.getCreatedAt()).isNotNull();
-        });
-        assertThat(tools.recordedCallIds()).containsExactlyElementsOf(calls.stream().map(AssistantToolCall::getId).toList());
+            savedIds.add(call.getId());
+        }
+        assertThat(tools.recordedCallIds()).isEqualTo(savedIds);
     }
 
     private AssistantToolCall lastCall() {
@@ -242,8 +258,14 @@ class AssistantToolsTest {
         while (!Instant.now().isAfter(before)) {
             Thread.onSpinWait();
         }
-        TransactionType type = from == null ? TransactionType.DEPOSIT
-                : to == null ? TransactionType.WITHDRAWAL : TransactionType.TRANSFER;
+        TransactionType type;
+        if (from == null) {
+            type = TransactionType.DEPOSIT;
+        } else if (to == null) {
+            type = TransactionType.WITHDRAWAL;
+        } else {
+            type = TransactionType.TRANSFER;
+        }
         em.persist(new Transaction(reference, from, to, new BigDecimal(amount), type, TransactionStatus.SUCCESS));
         em.flush();
     }

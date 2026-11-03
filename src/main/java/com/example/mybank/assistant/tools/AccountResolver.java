@@ -4,6 +4,7 @@ import com.example.mybank.dto.responses.AccountResponse;
 import com.example.mybank.services.AccountService;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,7 +14,11 @@ import java.util.List;
 @Component
 public class AccountResolver {
 
-    public enum Status { FOUND, NOT_FOUND, AMBIGUOUS }
+    public enum Status {
+        FOUND,
+        NOT_FOUND,
+        AMBIGUOUS // More than one of the customer's accounts ends with these digits
+    }
 
     public record Resolution(Status status, AccountResponse account, List<String> maskedOptions) {}
 
@@ -24,26 +29,57 @@ public class AccountResolver {
     }
 
     public Resolution resolve(String email, String accountNumberOrLast4) {
-        String input = accountNumberOrLast4 == null ? "" : accountNumberOrLast4.replaceAll("[\\s.\\-]", "");
-        if (!input.matches("\\d{4,}")) {
-            return new Resolution(Status.NOT_FOUND, null, List.of());
+        // Allow "1000-004-821" or "1000 004 821" by removing spaces, dots and dashes
+        String input = "";
+        if (accountNumberOrLast4 != null) {
+            input = accountNumberOrLast4.replace(" ", "").replace(".", "").replace("-", "");
         }
 
-        List<AccountResponse> matches = accountService.getMyAccounts(email).stream()
-                .filter(account -> account.accountNumber().equals(input) || account.accountNumber().endsWith(input))
-                .toList();
+        // Need at least 4 digits, and digits only
+        if (input.length() < 4 || !isAllDigits(input)) {
+            return new Resolution(Status.NOT_FOUND, null, new ArrayList<>());
+        }
+
+        // Look only through this customer's accounts
+        List<AccountResponse> matches = new ArrayList<>();
+        for (AccountResponse account : accountService.getMyAccounts(email)) {
+            if (account.accountNumber().endsWith(input)) {
+                matches.add(account);
+            }
+        }
 
         if (matches.isEmpty()) {
-            return new Resolution(Status.NOT_FOUND, null, List.of());
+            return new Resolution(Status.NOT_FOUND, null, new ArrayList<>());
         }
+
         if (matches.size() > 1) {
-            return new Resolution(Status.AMBIGUOUS, null,
-                    matches.stream().map(account -> mask(account.accountNumber())).toList());
+            List<String> maskedOptions = new ArrayList<>();
+            for (AccountResponse account : matches) {
+                maskedOptions.add(mask(account.accountNumber()));
+            }
+            return new Resolution(Status.AMBIGUOUS, null, maskedOptions);
         }
-        return new Resolution(Status.FOUND, matches.get(0), List.of());
+
+        return new Resolution(Status.FOUND, matches.get(0), new ArrayList<>());
     }
 
+    // "1000004821" becomes "...4821"
     public static String mask(String accountNumber) {
-        return accountNumber == null ? null : "..." + accountNumber.substring(Math.max(0, accountNumber.length() - 4));
+        if (accountNumber == null) {
+            return null;
+        }
+        if (accountNumber.length() <= 4) {
+            return "..." + accountNumber;
+        }
+        return "..." + accountNumber.substring(accountNumber.length() - 4);
+    }
+
+    private boolean isAllDigits(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            if (!Character.isDigit(text.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 }
