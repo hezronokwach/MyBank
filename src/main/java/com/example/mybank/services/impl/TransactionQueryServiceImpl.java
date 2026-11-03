@@ -83,11 +83,14 @@ public class TransactionQueryServiceImpl implements TransactionQueryService {
         boolean outgoing = transaction.getFromAccount() != null
                 && transaction.getFromAccount().getId().equals(viewingAccountId);
         Account counterparty = outgoing ? transaction.getToAccount() : transaction.getFromAccount();
+        // Transfers only run between accounts of the same currency, so the customer's side gives it
+        Account ownSide = outgoing ? transaction.getFromAccount() : transaction.getToAccount();
 
         return new TransactionHistoryResponse(
                 transaction.getCreatedAt(),
                 transaction.getType(),
                 transaction.getAmount(),
+                ownSide.getCurrency(),
                 outgoing ? TransactionDirection.OUT : TransactionDirection.IN,
                 counterparty == null ? null : last4(counterparty.getAccountNumber()),
                 transaction.getReference(),

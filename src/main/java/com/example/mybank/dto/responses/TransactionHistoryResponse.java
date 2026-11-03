@@ -11,6 +11,7 @@ public record TransactionHistoryResponse(
         Instant date,
         TransactionType type,
         BigDecimal amount,
+        String currency,
         TransactionDirection direction,
         String counterpartyLast4, // null for deposits and withdrawals, which have no other account
         String reference,

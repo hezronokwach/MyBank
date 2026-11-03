@@ -70,6 +70,7 @@ class TransactionQueryServiceTest {
         assertThat(incoming.direction()).isEqualTo(TransactionDirection.IN);
         assertThat(incoming.counterpartyLast4()).isEqualTo("7777");
         assertThat(incoming.amount()).isEqualByComparingTo("50");
+        assertThat(incoming.currency()).isEqualTo("KES");
         assertThat(incoming.status()).isEqualTo(TransactionStatus.SUCCESS);
         assertThat(incoming.date()).isNotNull();
 
