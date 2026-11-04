@@ -63,13 +63,16 @@ class TransactionQueryServiceTest {
 
         List<TransactionHistoryResponse> history = service.getRecent(WANJIKU, "1000004821", 10);
 
-        assertThat(history).extracting(TransactionHistoryResponse::reference)
-                .containsExactly("TRN1000003", "TRN1000002", "DEP1000001");
+        assertThat(history).hasSize(3);
+        assertThat(history.get(0).reference()).isEqualTo("TRN1000003");
+        assertThat(history.get(1).reference()).isEqualTo("TRN1000002");
+        assertThat(history.get(2).reference()).isEqualTo("DEP1000001");
 
         TransactionHistoryResponse incoming = history.get(0);
         assertThat(incoming.direction()).isEqualTo(TransactionDirection.IN);
         assertThat(incoming.counterpartyLast4()).isEqualTo("7777");
         assertThat(incoming.amount()).isEqualByComparingTo("50");
+        assertThat(incoming.currency()).isEqualTo("KES");
         assertThat(incoming.status()).isEqualTo(TransactionStatus.SUCCESS);
         assertThat(incoming.date()).isNotNull();
 

@@ -1,5 +1,6 @@
 package com.example.mybank.assistant;
 
+import com.example.mybank.assistant.tools.AssistantToolsFactory;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -9,13 +10,15 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * TEMPORARY: checks that the model is reachable with the system prompt.
+ * TEMPORARY: checks that the model is reachable with the system prompt and the read tools,
+ * using the logged-in admin's own accounts.
  * Admin-only so the free Groq quota can't be used by every customer. Replaced by the chat endpoint (#12).
  */
 @RestController
@@ -26,10 +29,13 @@ public class AssistantPingController {
 
     private final ChatClient chatClient;
     private final AssistantPrompt prompt;
+    private final AssistantToolsFactory toolsFactory;
 
-    public AssistantPingController(ChatClient.Builder chatClientBuilder, AssistantPrompt prompt) {
+    public AssistantPingController(ChatClient.Builder chatClientBuilder, AssistantPrompt prompt,
+                                   AssistantToolsFactory toolsFactory) {
         this.chatClient = chatClientBuilder.build();
         this.prompt = prompt;
+        this.toolsFactory = toolsFactory;
     }
 
     public record PingRequest(@NotBlank @Size(max = 500) String message) {}
@@ -38,12 +44,13 @@ public class AssistantPingController {
 
     @PostMapping("/ping")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PingResponse> ping(@Valid @RequestBody PingRequest request) {
+    public ResponseEntity<PingResponse> ping(@Valid @RequestBody PingRequest request, Authentication authentication) {
         long start = System.currentTimeMillis();
         try {
             String reply = chatClient.prompt()
                     .system(prompt.text())
                     .user(request.message())
+                    .tools(toolsFactory.forUser(authentication.getName()))
                     .call()
                     .content();
             return ResponseEntity.ok(new PingResponse(reply, prompt.version(), System.currentTimeMillis() - start));

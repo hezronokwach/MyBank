@@ -43,6 +43,6 @@ class AssistantStartupTest {
                 .contains("Use only the tools")
                 .contains("Never ask for, accept or repeat a PIN")
                 .contains("last 4 digits")
-                .contains("English or Swahili");
+                .contains("the whole reply must be in Swahili");
     }
 }
