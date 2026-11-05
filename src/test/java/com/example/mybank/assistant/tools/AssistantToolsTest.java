@@ -247,7 +247,7 @@ class AssistantToolsTest {
         ToolResult result = tools.requestFreezeAccount("4821", "lost phone");
 
         assertThat(result.status()).isEqualTo(ToolOutcome.OK);
-        assertThat(result.message()).isEqualTo("Nothing is frozen yet. Tell the customer to press Confirm in the app.");
+        assertThat(result.message()).isEqualTo("Nothing is frozen yet. Tell the customer to press Confirm on the card below your answer.");
 
         List<PendingActionView> created = tools.createdPendingActions();
         assertThat(created).hasSize(1);
