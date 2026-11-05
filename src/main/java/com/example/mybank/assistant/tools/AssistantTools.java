@@ -253,8 +253,9 @@ public class AssistantTools {
 
     @Tool(name = "requestFreezeAccount",
             description = "Prepares a freeze of one of the customer's ACTIVE accounts, for example after a lost "
-                    + "phone. It does NOT freeze anything: it creates a request that the customer must confirm in "
-                    + "the app within 5 minutes. Tell the customer to confirm it; never say the account is frozen.")
+                    + "phone. It does NOT freeze anything: it creates a request that the customer must confirm "
+                    + "within 5 minutes on the card shown below your answer. Tell the customer to press Confirm on "
+                    + "that card; never say the account is frozen.")
     public ToolResult requestFreezeAccount(
             @ToolParam(description = "The account's last 4 (or more) digits, or the full account number")
             String accountNumberOrLast4,
@@ -290,7 +291,7 @@ public class AssistantTools {
                 data.put("status", "WAITING_FOR_CUSTOMER_TO_CONFIRM");
                 data.put("expiresInMinutes", 5);
                 result = new ToolResult(ToolOutcome.OK,
-                        "Nothing is frozen yet. Tell the customer to press Confirm in the app.", data);
+                        "Nothing is frozen yet. Tell the customer to press Confirm on the card below your answer.", data);
             }
         } catch (RuntimeException e) {
             result = errorResult("requestFreezeAccount", e);
