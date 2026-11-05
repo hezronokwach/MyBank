@@ -1,8 +1,12 @@
 package com.example.mybank.assistant.tools;
 
+import com.example.mybank.assistant.PendingActionService;
+import com.example.mybank.assistant.dto.PendingActionView;
 import com.example.mybank.assistant.entity.AssistantToolCall;
+import com.example.mybank.assistant.entity.PendingActionStatus;
 import com.example.mybank.assistant.entity.ToolOutcome;
 import com.example.mybank.assistant.repository.AssistantToolCallRepository;
+import com.example.mybank.assistant.repository.PendingActionRepository;
 import com.example.mybank.assistant.tools.AssistantTools.AccountView;
 import com.example.mybank.assistant.tools.AssistantTools.ToolResult;
 import com.example.mybank.assistant.tools.AssistantTools.TransactionView;
@@ -48,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DataJpaTest
 @Import({
-        AssistantToolsFactory.class, AccountResolver.class, AccountServiceImpl.class,
+        AssistantToolsFactory.class, PendingActionService.class, AccountResolver.class, AccountServiceImpl.class,
         TransactionQueryServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
         AssistantToolsTest.Beans.class
 })
@@ -77,6 +81,9 @@ class AssistantToolsTest {
 
     @Autowired
     private AssistantToolCallRepository toolCalls;
+
+    @Autowired
+    private PendingActionRepository pendingActions;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -233,6 +240,46 @@ class AssistantToolsTest {
             savedIds.add(call.getId());
         }
         assertThat(tools.recordedCallIds()).isEqualTo(savedIds);
+    }
+
+    @Test
+    void requestFreezeAccountOnlyCreatesARequest() {
+        ToolResult result = tools.requestFreezeAccount("4821", "lost phone");
+
+        assertThat(result.status()).isEqualTo(ToolOutcome.OK);
+        assertThat(result.message()).isEqualTo("Nothing is frozen yet. Tell the customer to press Confirm in the app.");
+
+        List<PendingActionView> created = tools.createdPendingActions();
+        assertThat(created).hasSize(1);
+        assertThat(created.get(0).status()).isEqualTo(PendingActionStatus.PENDING);
+        assertThat(created.get(0).summary()).isEqualTo("Freeze account ...4821");
+
+        // The account itself is untouched until the customer confirms
+        em.flush();
+        em.clear();
+        assertThat(em.find(Account.class, wanjikuCurrent.getId()).getStatus()).isEqualTo(AccountStatus.ACTIVE);
+        assertThat(lastCall().getToolName()).isEqualTo("requestFreezeAccount");
+    }
+
+    @Test
+    void requestFreezeAccountRejectsAnotherCustomersAccount() {
+        ToolResult result = tools.requestFreezeAccount("1000007777", "lost phone");
+
+        assertThat(result.status()).isEqualTo(ToolOutcome.NOT_FOUND);
+        assertThat(tools.createdPendingActions()).isEmpty();
+        assertThat(pendingActions.count()).isZero();
+    }
+
+    @Test
+    void requestFreezeAccountRejectsAnAccountThatIsNotActive() {
+        Account frozen = account("1000005555", wanjiku, AccountType.SAVINGS, "10.00");
+        frozen.setStatus(AccountStatus.FROZEN);
+        em.flush();
+
+        ToolResult result = tools.requestFreezeAccount("5555", "lost phone");
+
+        assertThat(result.status()).isEqualTo(ToolOutcome.DENIED);
+        assertThat(tools.createdPendingActions()).isEmpty();
     }
 
     private AssistantToolCall lastCall() {

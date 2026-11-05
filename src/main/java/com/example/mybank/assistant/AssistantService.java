@@ -1,6 +1,7 @@
 package com.example.mybank.assistant;
 
 import com.example.mybank.assistant.dto.ChatAnswer;
+import com.example.mybank.assistant.dto.PendingActionView;
 import com.example.mybank.assistant.entity.AssistantConversation;
 import com.example.mybank.assistant.entity.AssistantToolCall;
 import com.example.mybank.assistant.entity.ConversationMessage;
@@ -110,7 +111,7 @@ public class AssistantService {
         messageRepository.save(new ConversationMessage(conversation.getId(), MessageRole.USER, message));
 
         // 4. Ask the model
-        AssistantTools tools = toolsFactory.forUser(email);
+        AssistantTools tools = toolsFactory.forConversation(email, conversation.getId());
         long start = System.currentTimeMillis();
 
         String text;
@@ -174,7 +175,10 @@ public class AssistantService {
         log.info("Assistant answer conversation={} user={} outcome={} latencyMs={} inputTokens={} outputTokens={} tools={}",
                 conversation.getId(), user.getId(), outcome, latencyMs, inputTokens, outputTokens, toolCalls.size());
 
-        return new ChatAnswer(conversation.getId(), answer.getId(), text, outcome, sources, new ArrayList<>());
+        // Confirm cards for anything the assistant prepared in this turn
+        List<PendingActionView> pendingActions = tools.createdPendingActions();
+
+        return new ChatAnswer(conversation.getId(), answer.getId(), text, outcome, sources, pendingActions);
     }
 
     // The last 10 messages, oldest first, as Spring AI messages.
@@ -219,6 +223,8 @@ public class AssistantService {
                 source = "recent transactions";
             } else if (toolCall.getToolName().equals("findTransaction")) {
                 source = "a transaction lookup";
+            } else if (toolCall.getToolName().equals("requestFreezeAccount")) {
+                source = "a freeze request";
             } else {
                 source = toolCall.getToolName();
             }

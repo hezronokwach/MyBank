@@ -1,6 +1,9 @@
 package com.example.mybank.assistant.tools;
 
+import com.example.mybank.assistant.PendingActionService;
+import com.example.mybank.assistant.dto.PendingActionView;
 import com.example.mybank.assistant.entity.AssistantToolCall;
+import com.example.mybank.assistant.entity.PendingAction;
 import com.example.mybank.assistant.entity.ToolOutcome;
 import com.example.mybank.assistant.repository.AssistantToolCallRepository;
 import com.example.mybank.dto.responses.AccountResponse;
@@ -66,25 +69,31 @@ public class AssistantTools {
 
     private final String email;
     private final UUID userId;
+    private final UUID conversationId;
     private final AccountService accountService;
     private final TransactionQueryService transactionQueryService;
     private final AccountResolver accountResolver;
     private final AssistantToolCallRepository toolCallRepository;
     private final ObjectMapper objectMapper;
+    private final PendingActionService pendingActionService;
 
     private int callCount = 0;
     private final List<UUID> recordedCallIds = new ArrayList<>();
+    private final List<PendingActionView> createdPendingActions = new ArrayList<>();
 
-    AssistantTools(String email, UUID userId, AccountService accountService,
+    AssistantTools(String email, UUID userId, UUID conversationId, AccountService accountService,
                    TransactionQueryService transactionQueryService, AccountResolver accountResolver,
-                   AssistantToolCallRepository toolCallRepository, ObjectMapper objectMapper) {
+                   AssistantToolCallRepository toolCallRepository, ObjectMapper objectMapper,
+                   PendingActionService pendingActionService) {
         this.email = email;
         this.userId = userId;
+        this.conversationId = conversationId;
         this.accountService = accountService;
         this.transactionQueryService = transactionQueryService;
         this.accountResolver = accountResolver;
         this.toolCallRepository = toolCallRepository;
         this.objectMapper = objectMapper;
+        this.pendingActionService = pendingActionService;
     }
 
     // =========================================================================
@@ -240,6 +249,61 @@ public class AssistantTools {
         }
 
         return finish("findTransaction", arguments, result, start);
+    }
+
+    @Tool(name = "requestFreezeAccount",
+            description = "Prepares a freeze of one of the customer's ACTIVE accounts, for example after a lost "
+                    + "phone. It does NOT freeze anything: it creates a request that the customer must confirm in "
+                    + "the app within 5 minutes. Tell the customer to confirm it; never say the account is frozen.")
+    public ToolResult requestFreezeAccount(
+            @ToolParam(description = "The account's last 4 (or more) digits, or the full account number")
+            String accountNumberOrLast4,
+            @ToolParam(description = "Why the customer wants to freeze it, in a few words", required = false)
+            String reason) {
+        long start = System.currentTimeMillis();
+        Map<String, Object> arguments = new LinkedHashMap<>();
+        arguments.put("accountNumberOrLast4", accountNumberOrLast4);
+        arguments.put("reason", reason);
+
+        if (isOverCallLimit()) {
+            return finish("requestFreezeAccount", arguments, deniedResult(), start);
+        }
+
+        ToolResult result;
+        try {
+            AccountResolver.Resolution resolution = accountResolver.resolve(email, accountNumberOrLast4);
+
+            if (resolution.status() != AccountResolver.Status.FOUND) {
+                result = unresolvedResult(resolution);
+            } else if (resolution.account().status() != AccountStatus.ACTIVE) {
+                result = new ToolResult(ToolOutcome.DENIED,
+                        "This account isn't active, so it can't be frozen. For help, contact support.", null);
+            } else {
+                // Only saves a request; the account is frozen later, if the customer confirms
+                PendingAction action = pendingActionService.createFreeze(
+                        userId, conversationId, resolution.account().accountNumber(), reason);
+                PendingActionView view = pendingActionService.toView(action);
+                createdPendingActions.add(view);
+
+                Map<String, Object> data = new HashMap<>();
+                data.put("summary", view.summary());
+                data.put("status", "WAITING_FOR_CUSTOMER_TO_CONFIRM");
+                data.put("expiresInMinutes", 5);
+                result = new ToolResult(ToolOutcome.OK,
+                        "Nothing is frozen yet. Tell the customer to press Confirm in the app.", data);
+            }
+        } catch (RuntimeException e) {
+            result = errorResult("requestFreezeAccount", e);
+        }
+
+        return finish("requestFreezeAccount", arguments, result, start);
+    }
+
+    /**
+     * Pending actions created during this answer, so the chat endpoint can show a confirm card for each.
+     */
+    public List<PendingActionView> createdPendingActions() {
+        return new ArrayList<>(createdPendingActions);
     }
 
     /**

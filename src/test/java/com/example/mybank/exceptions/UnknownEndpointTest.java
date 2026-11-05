@@ -8,6 +8,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,6 +38,15 @@ class UnknownEndpointTest {
                 .andExpect(jsonPath("$.error").value("Not Found"))
                 .andExpect(jsonPath("$.message").value("No endpoint found for GET /api/v1/no-such-endpoint"))
                 .andExpect(jsonPath("$.path").value("/api/v1/no-such-endpoint"));
+    }
+
+    @Test
+    @WithMockUser
+    void invalidIdInTheUrlReturns400() throws Exception {
+        mockMvc.perform(post("/api/v1/assistant/actions/not-a-uuid/confirm"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Invalid value for actionId: not-a-uuid"));
     }
 
     @Test
