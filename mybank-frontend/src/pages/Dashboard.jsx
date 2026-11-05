@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import Layout from '../components/Layout';
+import ChatPanel from '../components/assistant/ChatPanel';
 
 const Dashboard = () => {
     const [accounts, setAccounts] = useState([]);
     const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
     const [isAdmin, setIsAdmin] = useState(false);
+    // Goes up by one whenever the accounts should be loaded again (for example after the assistant froze one)
+    const [accountsVersion, setAccountsVersion] = useState(0);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -22,7 +25,9 @@ const Dashboard = () => {
             }
         };
         fetchRole();
-        
+    }, [navigate]);
+
+    useEffect(() => {
         const fetchAccounts = async () => {
             try {
                 const response = await api.get('/accounts/me');
@@ -32,7 +37,7 @@ const Dashboard = () => {
             }
         };
         fetchAccounts();
-    }, [navigate]);
+    }, [accountsVersion]);
     
     const account = accounts.length > 0 ? accounts[selectedAccountIndex] : null;
 
@@ -104,6 +109,8 @@ const Dashboard = () => {
                         </>
                     )}
                 </div>
+
+                <ChatPanel onAccountsChanged={() => setAccountsVersion(accountsVersion + 1)} />
             </div>
         </Layout>
     );
