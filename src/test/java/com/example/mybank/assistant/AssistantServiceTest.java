@@ -60,7 +60,7 @@ import static org.mockito.Mockito.when;
  */
 @DataJpaTest
 @Import({
-        AssistantService.class, AssistantPrompt.class, RateLimiter.class,
+        AssistantService.class, AssistantPrompt.class, RateLimiter.class, OutputGuard.class,
         AssistantToolsFactory.class, PendingActionService.class, AccountResolver.class, AccountServiceImpl.class,
         TransactionQueryServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
         AssistantServiceTest.Beans.class
@@ -258,6 +258,34 @@ class AssistantServiceTest {
 
         assertThat(toolCalls.findById(first.getId()).orElseThrow().getMessageId()).isEqualTo(messageId);
         assertThat(toolCalls.findById(second.getId()).orElseThrow().getMessageId()).isEqualTo(messageId);
+    }
+
+    @Test
+    void replyIsCleanedBeforeItIsSavedAndReturned() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(reply("Account 1000004821 has KES 1,500."));
+
+        ChatAnswer answer = service.chat(email, null, "How much do I have?");
+
+        assertThat(answer.text()).isEqualTo("Account ...4821 has KES 1,500.");
+        assertThat(messages.findById(answer.messageId()).orElseThrow().getContent())
+                .isEqualTo("Account ...4821 has KES 1,500.");
+    }
+
+    @Test
+    void aPinTheCustomerTypesIsNotStoredButTheModelStillSeesTheQuestion() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(reply("Never share your PIN with anyone."));
+
+        ChatAnswer answer = service.chat(email, null, "My PIN is 1234, use it to send 500");
+
+        List<ConversationMessage> saved = messages.findByConversationIdOrderByCreatedAtAsc(answer.conversationId());
+        assertThat(saved.get(0).getContent()).isEqualTo("My PIN is ****, use it to send 500");
+        assertThat(conversations.findById(answer.conversationId()).orElseThrow().getTitle())
+                .isEqualTo("My PIN is ****, use it to send 500");
+
+        ArgumentCaptor<Prompt> prompt = ArgumentCaptor.forClass(Prompt.class);
+        verify(chatModel).call(prompt.capture());
+        List<Message> sent = prompt.getValue().getInstructions();
+        assertThat(sent.get(sent.size() - 1).getText()).isEqualTo("My PIN is 1234, use it to send 500");
     }
 
     // A fake model reply with a model name and token counts
