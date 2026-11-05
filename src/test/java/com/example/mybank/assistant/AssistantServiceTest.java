@@ -61,7 +61,7 @@ import static org.mockito.Mockito.when;
 @DataJpaTest
 @Import({
         AssistantService.class, AssistantPrompt.class, RateLimiter.class,
-        AssistantToolsFactory.class, AccountResolver.class, AccountServiceImpl.class,
+        AssistantToolsFactory.class, PendingActionService.class, AccountResolver.class, AccountServiceImpl.class,
         TransactionQueryServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
         AssistantServiceTest.Beans.class
 })
