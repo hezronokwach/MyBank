@@ -12,6 +12,6 @@ public record ChatAnswer(
         String text,
         MessageOutcome outcome,
         List<String> sources,        // What the answer was based on, such as "your accounts"
-        List<Object> pendingActions  // Actions waiting for the customer to confirm (added in #13)
+        List<PendingActionView> pendingActions  // Actions waiting for the customer to confirm, one confirm card each
 ) {
 }
