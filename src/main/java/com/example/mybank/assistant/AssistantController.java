@@ -2,6 +2,8 @@ package com.example.mybank.assistant;
 
 import com.example.mybank.assistant.dto.ChatAnswer;
 import com.example.mybank.assistant.dto.ChatRequest;
+import com.example.mybank.assistant.dto.FeedbackRequest;
+import com.example.mybank.assistant.dto.FeedbackResponse;
 import com.example.mybank.assistant.dto.PendingActionView;
 import com.example.mybank.assistant.entity.MessageOutcome;
 import jakarta.validation.Valid;
@@ -23,10 +25,14 @@ public class AssistantController {
 
     private final AssistantService assistantService;
     private final PendingActionService pendingActionService;
+    private final FeedbackService feedbackService;
 
-    public AssistantController(AssistantService assistantService, PendingActionService pendingActionService) {
+    public AssistantController(AssistantService assistantService,
+                               PendingActionService pendingActionService,
+                               FeedbackService feedbackService) {
         this.assistantService = assistantService;
         this.pendingActionService = pendingActionService;
+        this.feedbackService = feedbackService;
     }
 
     /**
@@ -76,5 +82,21 @@ public class AssistantController {
         String userEmail = authentication.getName();
         PendingActionView action = pendingActionService.cancel(userEmail, actionId);
         return ResponseEntity.ok(action);
+    }
+
+    /**
+     * POST /api/v1/assistant/feedback
+     * Thumbs up (1) or thumbs down (-1) on one of the customer's assistant answers, with an optional comment.
+     */
+    @PostMapping("/feedback")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<FeedbackResponse> giveFeedback(
+            @Valid @RequestBody FeedbackRequest request,
+            Authentication authentication
+    ) {
+        String userEmail = authentication.getName();
+        FeedbackResponse feedback = feedbackService.giveFeedback(
+                userEmail, request.messageId(), request.rating(), request.comment());
+        return ResponseEntity.ok(feedback);
     }
 }
