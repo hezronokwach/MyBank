@@ -39,7 +39,7 @@ import java.util.UUID;
  *   2. load the customer's conversation (or start a new one) and its last 10 messages
  *   3. save the customer's message
  *   4. ask the model, giving it the system prompt, the history and the tools
- *   5. save the answer with its prompt version, model, tokens, latency and outcome
+ *   5. clean the answer with OutputGuard, then save it with its prompt version, model, tokens, latency and outcome
  *   6. link this turn's tool-call audit rows to the answer
  *
  * There is deliberately no @Transactional here: the model call can take up to 10 seconds,
@@ -63,6 +63,7 @@ public class AssistantService {
     private final AssistantConversationRepository conversationRepository;
     private final ConversationMessageRepository messageRepository;
     private final AssistantToolCallRepository toolCallRepository;
+    private final OutputGuard outputGuard;
     private final String configuredModel;
 
     public AssistantService(ChatClient.Builder chatClientBuilder,
@@ -73,6 +74,7 @@ public class AssistantService {
                             AssistantConversationRepository conversationRepository,
                             ConversationMessageRepository messageRepository,
                             AssistantToolCallRepository toolCallRepository,
+                            OutputGuard outputGuard,
                             @Value("${spring.ai.openai.chat.options.model:unknown}") String configuredModel) {
         this.chatClient = chatClientBuilder.build();
         this.prompt = prompt;
@@ -82,6 +84,7 @@ public class AssistantService {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.toolCallRepository = toolCallRepository;
+        this.outputGuard = outputGuard;
         this.configuredModel = configuredModel;
     }
 
@@ -101,14 +104,15 @@ public class AssistantService {
             conversation = conversationRepository.findByIdAndUserId(conversationId, user.getId())
                     .orElseThrow(() -> new ConversationNotFoundException("Conversation " + conversationId + " not found"));
         } else {
-            conversation = conversationRepository.save(new AssistantConversation(user.getId(), makeTitle(message)));
+            conversation = conversationRepository.save(new AssistantConversation(user.getId(), makeTitle(outputGuard.clean(message))));
         }
 
         // History is loaded before saving the new message, so it holds only the earlier ones
         List<Message> history = loadHistory(conversation.getId());
 
-        // 3. Save the customer's message
-        messageRepository.save(new ConversationMessage(conversation.getId(), MessageRole.USER, message));
+        // 3. Save the customer's message. It is cleaned first, so a PIN the customer typed is never stored.
+        //    (The model still gets the original, so it can warn them not to share their PIN.)
+        messageRepository.save(new ConversationMessage(conversation.getId(), MessageRole.USER, outputGuard.clean(message)));
 
         // 4. Ask the model
         AssistantTools tools = toolsFactory.forConversation(email, conversation.getId());
@@ -135,6 +139,8 @@ public class AssistantService {
                 text = FALLBACK_TEXT;
                 outcome = MessageOutcome.FALLBACK;
             } else {
+                // 5. Catch anything the model should never show: account numbers, PINs, tokens
+                text = outputGuard.clean(text);
                 outcome = MessageOutcome.OK;
             }
 
@@ -161,7 +167,7 @@ public class AssistantService {
 
         long latencyMs = System.currentTimeMillis() - start;
 
-        // 5. Save the answer
+        // Save the answer
         ConversationMessage answer = messageRepository.save(new ConversationMessage(
                 conversation.getId(), text, prompt.version(), model, inputTokens, outputTokens, latencyMs, outcome));
 
