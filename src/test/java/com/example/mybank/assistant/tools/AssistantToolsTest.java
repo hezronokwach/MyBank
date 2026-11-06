@@ -181,6 +181,7 @@ class AssistantToolsTest {
         assertThat(transfer.direction()).isEqualTo(TransactionDirection.IN);
         assertThat(transfer.counterparty()).isEqualTo("...7777");
         assertThat(transfer.currency()).isEqualTo("KES");
+        assertThat(transfer.amount().toPlainString()).isEqualTo("50.00");
         assertThat(transfer.date()).matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})");
     }
 
