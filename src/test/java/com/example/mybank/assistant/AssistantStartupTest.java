@@ -38,10 +38,10 @@ class AssistantStartupTest {
 
     @Test
     void loadsVersionedSystemPrompt() {
-        assertThat(prompt.version()).isEqualTo("v1");
+        assertThat(prompt.version()).isEqualTo("v2");
         assertThat(prompt.text())
                 .contains("Use only the tools")
-                .contains("Never ask for, accept or repeat a PIN")
+                .contains("start your reply by telling them never to share their PIN")
                 .contains("last 4 digits")
                 .contains("the whole reply must be in Swahili");
     }

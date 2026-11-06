@@ -24,6 +24,7 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -376,7 +377,7 @@ public class AssistantTools {
                 AccountResolver.mask(account.accountNumber()),
                 account.type(),
                 account.currency(),
-                account.balance(),
+                toMoney(account.balance()),
                 account.status(),
                 formatDate(account.createdAt())
         );
@@ -392,13 +393,21 @@ public class AssistantTools {
         return new TransactionView(
                 formatDate(transaction.date()),
                 transaction.type(),
-                transaction.amount(),
+                toMoney(transaction.amount()),
                 transaction.currency(),
                 transaction.direction(),
                 counterparty,
                 transaction.reference(),
                 transaction.status()
         );
+    }
+
+    // The database keeps 4 decimals (1000.0000). The model gets 2 (1000.00): shorter, and how people read money.
+    private BigDecimal toMoney(BigDecimal amount) {
+        if (amount == null) {
+            return null;
+        }
+        return amount.setScale(2, RoundingMode.HALF_UP);
     }
 
     // Dates are sent as text with their time zone, for example "2026-11-03T23:31+03:00",
