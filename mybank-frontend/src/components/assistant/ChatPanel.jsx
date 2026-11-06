@@ -48,6 +48,7 @@ const ChatPanel = ({ onAccountsChanged }) => {
     const [conversationId, setConversationId] = useState(null);
     const [isThinking, setIsThinking] = useState(false);
     const [busyActionId, setBusyActionId] = useState(null);
+    const [isOpen, setIsOpen] = useState(false);
     const listEnd = useRef(null);
     const { notify } = useNotification();
 
@@ -126,58 +127,46 @@ const ChatPanel = ({ onAccountsChanged }) => {
     };
 
     return (
-        <div className="bg-white border border-gray-200 rounded-lg mt-8">
-            <div className="px-6 py-4 border-b border-gray-100">
-                <h2 className="text-lg font-bold text-bank-heading">Ask the MyBank assistant</h2>
-                <p className="text-sm text-gray-500">Balances, recent transactions, or freezing an account. Never share your PIN here.</p>
-            </div>
+        <aside className={`assistant-widget ${isOpen ? 'assistant-widget--open' : ''}`} aria-label="MyBank assistant">
+            <button type="button" className="assistant-launcher" onClick={() => setIsOpen((open) => !open)} aria-expanded={isOpen}>
+                <span className="assistant-launcher__spark" aria-hidden="true">✦</span>
+                <span>{isOpen ? 'Close helper' : 'Need help?'}</span>
+            </button>
+            {isOpen && <div className="assistant-panel">
+                <div className="assistant-panel__header">
+                    <div><p className="eyebrow">MyBank helper</p><h2>Ask a quick question</h2></div>
+                    <button type="button" onClick={() => setIsOpen(false)} aria-label="Close assistant">×</button>
+                </div>
 
-            <div className="px-6 py-4 h-96 overflow-y-auto bg-slate-50 flex flex-col gap-3">
-                {messages.length === 0 && (
-                    <p className="text-sm text-gray-500 text-center mt-8">
-                        Try "How much is in my savings account?" or "Show my last 3 transactions".
-                    </p>
-                )}
+                <div className="assistant-suggestions">
+                    <button type="button" onClick={() => setInput('How much is in my account?')}>My balance</button>
+                    <button type="button" onClick={() => setInput('Show my last 3 transactions')}>Recent activity</button>
+                </div>
 
-                {messages.map((message, index) => (
-                    <ChatMessage
-                        key={message.messageId || index}
-                        message={message}
-                        busyActionId={busyActionId}
-                        onRate={handleRate}
-                        onConfirm={handleConfirm}
-                        onCancel={handleCancel}
-                    />
-                ))}
+                <div className="assistant-messages">
+                    {messages.length === 0 && <p className="assistant-empty">I can help with balances, recent activity, or account questions. Never share your PIN here.</p>}
 
-                {isThinking && (
-                    <div className="flex justify-start">
-                        <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-gray-500 text-sm">Thinking…</div>
-                    </div>
-                )}
-                <div ref={listEnd} />
-            </div>
+                    {messages.map((message, index) => (
+                        <ChatMessage
+                            key={message.messageId || index}
+                            message={message}
+                            busyActionId={busyActionId}
+                            onRate={handleRate}
+                            onConfirm={handleConfirm}
+                            onCancel={handleCancel}
+                        />
+                    ))}
 
-            <form onSubmit={handleSend} className="px-6 py-4 border-t border-gray-100 flex gap-3">
-                <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    maxLength={MAX_LENGTH}
-                    placeholder="Type your question…"
-                    aria-label="Message to the assistant"
-                    disabled={isThinking}
-                    className="flex-1 border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#183a62]"
-                />
-                <button
-                    type="submit"
-                    disabled={isThinking || input.trim() === ''}
-                    className="px-5 py-2 text-white bg-[#183a62] rounded hover:bg-[#102e50] transition font-semibold"
-                >
-                    Send
-                </button>
-            </form>
-        </div>
+                    {isThinking && <div className="assistant-thinking"><i></i><i></i><i></i></div>}
+                    <div ref={listEnd} />
+                </div>
+
+                <form onSubmit={handleSend} className="assistant-compose">
+                    <input type="text" value={input} onChange={(e) => setInput(e.target.value)} maxLength={MAX_LENGTH} placeholder="Ask about your money" aria-label="Message to the assistant" disabled={isThinking} />
+                    <button type="submit" disabled={isThinking || input.trim() === ''} aria-label="Send message">↑</button>
+                </form>
+            </div>}
+        </aside>
     );
 };
 

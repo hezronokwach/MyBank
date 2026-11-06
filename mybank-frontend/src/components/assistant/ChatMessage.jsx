@@ -10,13 +10,20 @@ function removeBoldMarks(text) {
     return text.replaceAll('**', '').replaceAll('__', '');
 }
 
+function formatAnswer(text) {
+    return (removeBoldMarks(text) || '').split('\n').filter((line) => line.trim() !== '').map((line, index) => {
+        const isListItem = line.trim().startsWith('- ');
+        return <p key={`${line}-${index}`} className={isListItem ? 'assistant-bubble__item' : 'assistant-bubble__paragraph'}>{isListItem ? line.trim().slice(2) : line}</p>;
+    });
+}
+
 // One message in the chat: the customer's question, or the assistant's answer.
 // Under an answer: what it was based on, thumbs up/down, and any confirm cards.
 const ChatMessage = ({ message, busyActionId, onRate, onConfirm, onCancel }) => {
     if (message.role === 'user') {
         return (
-            <div className="flex justify-end">
-                <div className="max-w-[80%] bg-[#183a62] text-white rounded-lg px-4 py-2 whitespace-pre-wrap">
+            <div className="assistant-message assistant-message--user">
+                <div className="assistant-bubble assistant-bubble--user">
                     {message.text}
                 </div>
             </div>
@@ -27,9 +34,9 @@ const ChatMessage = ({ message, busyActionId, onRate, onConfirm, onCancel }) => 
     const isFallback = message.outcome === 'FALLBACK' || message.outcome === 'RATE_LIMITED_PROVIDER';
 
     return (
-        <div className="flex justify-start">
-            <div className="max-w-[80%] bg-white border border-gray-200 rounded-lg px-4 py-3">
-                <p className="text-bank-text whitespace-pre-wrap">{removeBoldMarks(message.text)}</p>
+        <div className="assistant-message assistant-message--helper">
+            <div className="assistant-bubble assistant-bubble--helper">
+                <div className="assistant-answer">{formatAnswer(message.text)}</div>
 
                 {isFallback && (
                     <p className="text-sm mt-2">
