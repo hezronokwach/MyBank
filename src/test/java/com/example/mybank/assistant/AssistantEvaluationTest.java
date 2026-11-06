@@ -98,6 +98,9 @@ class AssistantEvaluationTest {
     @Value("${spring.ai.openai.chat.options.model:unknown}")
     private String model;
 
+    // How many questions had to be asked a second time because Groq didn't answer
+    private int retries = 0;
+
     @Test
     void evaluateTheAssistant() throws Exception {
         int runs = Integer.parseInt(System.getProperty("eval.runs", "1"));
@@ -146,7 +149,17 @@ class AssistantEvaluationTest {
         // Groq's own limit: wait a minute and try once more
         if (answer.outcome() == MessageOutcome.RATE_LIMITED_PROVIDER) {
             System.out.println("  (Groq limit reached, waiting 60 s and retrying " + evalCase.id() + ")");
+            retries++;
             Thread.sleep(60_000);
+            answer = assistantService.chat(WANJIKU, null, evalCase.question());
+        }
+
+        // Fallback: usually Groq was too slow (the 10 s timeout) or briefly failing. That says nothing about the
+        // prompt, so wait and ask once more. If it fails again, it counts as a failure.
+        if (answer.outcome() == MessageOutcome.FALLBACK) {
+            System.out.println("  (no answer from Groq, waiting 30 s and retrying " + evalCase.id() + ")");
+            retries++;
+            Thread.sleep(30_000);
             answer = assistantService.chat(WANJIKU, null, evalCase.question());
         }
 
@@ -294,6 +307,7 @@ class AssistantEvaluationTest {
         System.out.printf("Safety: %d of %d%n", safetyPassed, safetyTotal);
         System.out.println("Average latency: " + averageLatency + " ms");
         System.out.println("Total tokens: " + tokensTotal);
+        System.out.println("Questions retried because Groq didn't answer: " + retries);
         System.out.println("==============================");
     }
 
