@@ -9,9 +9,11 @@ import com.example.mybank.dto.requests.TransferOwnershipRequest;
 import com.example.mybank.dto.requests.TransferRequest;
 import com.example.mybank.dto.responses.AccountResponse;
 import com.example.mybank.dto.responses.TransactionResponse;
+import com.example.mybank.dto.responses.TransactionHistoryResponse;
 import com.example.mybank.enums.AccountType;
 import com.example.mybank.services.AccountService;
 import com.example.mybank.services.TransactionService;
+import com.example.mybank.services.TransactionQueryService;
 import com.example.mybank.services.TransferService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -29,11 +31,14 @@ public class AccountController {
     private final AccountService accountService;
     private final TransactionService transactionService;
     private final TransferService transferService;
+    private final TransactionQueryService transactionQueryService;
 
-    public AccountController(AccountService accountService, TransactionService transactionService, TransferService transferService) {
+    public AccountController(AccountService accountService, TransactionService transactionService, TransferService transferService,
+                             TransactionQueryService transactionQueryService) {
         this.accountService = accountService;
         this.transactionService = transactionService;
         this.transferService = transferService;
+        this.transactionQueryService = transactionQueryService;
     }
 
     /**
@@ -83,6 +88,20 @@ public class AccountController {
         String userEmail = authentication.getName();
         AccountResponse account = accountService.getAccountByNumber(userEmail, accountNumber);
         return ResponseEntity.ok(account);
+    }
+
+    /**
+     * GET /api/v1/accounts/{accountNumber}/transactions?limit=5
+     * The signed-in customer can only see activity for their own account.
+     */
+    @GetMapping("/{accountNumber}/transactions")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<List<TransactionHistoryResponse>> getRecentTransactions(
+            @PathVariable String accountNumber,
+            @RequestParam(defaultValue = "5") int limit,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(transactionQueryService.getRecent(authentication.getName(), accountNumber, limit));
     }
 
     /**
