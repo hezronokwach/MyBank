@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axiosInstance';
 import Layout from '../components/Layout';
+import AssistantMetricsPanel from '../components/admin/AssistantMetricsPanel';
 
 const AdminDashboard = () => {
     const [accounts, setAccounts] = useState([]);
@@ -52,7 +53,9 @@ const AdminDashboard = () => {
                         <span className="px-4 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 rounded-full border border-indigo-100">Total: {accounts.length} Accounts</span>
                     </div>
                 </div>
-                
+
+                <AssistantMetricsPanel />
+
                 <div className="bg-white shadow-sm border border-gray-100 rounded-3xl overflow-hidden">
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 border-b border-gray-100">
