@@ -1,5 +1,6 @@
 package com.example.mybank.assistant;
 
+import com.example.mybank.assistant.dto.AssistantMetricsSummary;
 import com.example.mybank.assistant.entity.MessageOutcome;
 import com.example.mybank.assistant.entity.PendingActionStatus;
 import com.example.mybank.assistant.entity.PendingActionType;
@@ -11,6 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 
 /**
  * All the assistant's numbers, in one place. They show up at /actuator/metrics (admins only), for example
@@ -43,6 +46,7 @@ public class AssistantMetrics {
     private final MeterRegistry registry;
     private final double inputPricePerMillion;
     private final double outputPricePerMillion;
+    private final Instant countingSince = Instant.now();
 
     public AssistantMetrics(MeterRegistry registry,
                             @Value("${app.assistant.price.input-per-million:0.15}") double inputPricePerMillion,
@@ -116,6 +120,61 @@ public class AssistantMetrics {
             name = "down";
         }
         counter("assistant.feedback", "rating", name).increment();
+    }
+
+    // ---- Reading the numbers back, for the Admin Dashboard
+
+    public AssistantMetricsSummary summary() {
+        // Average time of the answers that worked
+        long averageLatencyMs = 0;
+        Timer okLatency = registry.find("assistant.latency").tag("outcome", MessageOutcome.OK.name()).timer();
+        if (okLatency != null && okLatency.count() > 0) {
+            averageLatencyMs = Math.round(okLatency.mean(TimeUnit.MILLISECONDS));
+        }
+
+        long toolCalls = total("assistant.tool.calls", null, null);
+        long toolCallsOk = total("assistant.tool.calls", "outcome", ToolOutcome.OK.name());
+
+        double cost = 0;
+        Counter costCounter = registry.find("assistant.cost.estimate").counter();
+        if (costCounter != null) {
+            cost = costCounter.count();
+        }
+
+        return new AssistantMetricsSummary(
+                countingSince,
+                total("assistant.requests", "outcome", MessageOutcome.OK.name()),
+                total("assistant.requests", "outcome", MessageOutcome.FALLBACK.name()),
+                total("assistant.requests", "outcome", MessageOutcome.RATE_LIMITED_PROVIDER.name()),
+                total("assistant.requests", "outcome", MessageOutcome.RATE_LIMITED.name()),
+                averageLatencyMs,
+                total("assistant.tokens", "type", "input"),
+                total("assistant.tokens", "type", "output"),
+                cost,
+                toolCalls,
+                toolCalls - toolCallsOk,
+                total("assistant.blocked", "reason", BLOCKED_RATE_LIMIT),
+                total("assistant.blocked", "reason", BLOCKED_TOOL_LIMIT),
+                total("assistant.blocked", "reason", BLOCKED_OUTPUT_GUARD),
+                total("assistant.actions", "status", PendingActionStatus.PENDING.name()),
+                total("assistant.actions", "status", PendingActionStatus.CONFIRMED.name()),
+                total("assistant.actions", "status", PendingActionStatus.CANCELLED.name()),
+                total("assistant.actions", "status", PendingActionStatus.EXPIRED.name()),
+                total("assistant.actions", "status", PendingActionStatus.FAILED.name()),
+                total("assistant.feedback", "rating", "up"),
+                total("assistant.feedback", "rating", "down"));
+    }
+
+    // Adds up every counter with this name and tag. For example assistant.tool.calls with outcome=OK
+    // has one counter per tool, so they are added together. Pass null as tagName to add up all of them.
+    private long total(String name, String tagName, String tagValue) {
+        double sum = 0;
+        for (Counter counter : registry.find(name).counters()) {
+            if (tagName == null || tagValue.equals(counter.getId().getTag(tagName))) {
+                sum = sum + counter.count();
+            }
+        }
+        return Math.round(sum);
     }
 
     // A counter with one tag. register() gives back the same counter every time for the same name and tag.

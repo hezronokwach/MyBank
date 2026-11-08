@@ -1,7 +1,9 @@
 package com.example.mybank.config;
 
 import com.example.mybank.assistant.AssistantMetrics;
+import com.example.mybank.assistant.dto.AssistantMetricsSummary;
 import com.example.mybank.assistant.entity.MessageOutcome;
+import com.example.mybank.assistant.entity.ToolOutcome;
 import com.example.mybank.entity.User;
 import com.example.mybank.enums.UserRole;
 import com.example.mybank.repository.UserRepository;
@@ -17,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -114,4 +117,37 @@ class ActuatorSecurityTest {
                 .andExpect(jsonPath("$.measurements[0].value", greaterThanOrEqualTo(300.0)));
     }
 
+    // ---- The summary the Admin Dashboard shows
+
+    @Test
+    void aCustomerCannotSeeTheAdminSummary() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/assistant/metrics").header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anAdminGetsTheSummaryInOneCall() throws Exception {
+        // Other tests in this class record numbers too, so compare with what was there before
+        AssistantMetricsSummary before = metrics.summary();
+
+        metrics.recordAnswer(MessageOutcome.OK, 1000, 400, 40);
+        metrics.recordAnswer(MessageOutcome.OK, 3000, 600, 60);
+        metrics.recordAnswer(MessageOutcome.FALLBACK, 10000, null, null);
+        metrics.recordToolCall("listMyAccounts", ToolOutcome.OK);
+        metrics.recordToolCall("getAccount", ToolOutcome.NOT_FOUND);
+        metrics.recordFeedback(1);
+
+        mockMvc.perform(get("/api/v1/admin/assistant/metrics").header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answersOk").value(before.answersOk() + 2))
+                .andExpect(jsonPath("$.answersFailed").value(before.answersFailed() + 1))
+                .andExpect(jsonPath("$.averageLatencyMs", greaterThan(0)))
+                .andExpect(jsonPath("$.inputTokens").value(before.inputTokens() + 1000))
+                .andExpect(jsonPath("$.outputTokens").value(before.outputTokens() + 100))
+                .andExpect(jsonPath("$.toolCalls").value(before.toolCalls() + 2))
+                .andExpect(jsonPath("$.toolCallsNotOk").value(before.toolCallsNotOk() + 1))
+                .andExpect(jsonPath("$.thumbsUp").value(before.thumbsUp() + 1))
+                .andExpect(jsonPath("$.thumbsDown").value(before.thumbsDown()))
+                .andExpect(jsonPath("$.countingSince").exists());
+    }
 }
