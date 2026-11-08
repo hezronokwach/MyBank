@@ -40,6 +40,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -63,6 +65,7 @@ import static org.mockito.Mockito.when;
         AssistantService.class, AssistantPrompt.class, RateLimiter.class, OutputGuard.class,
         AssistantToolsFactory.class, PendingActionService.class, AccountResolver.class, AccountServiceImpl.class,
         TransactionQueryServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
+        AssistantMetrics.class, TestMetricsConfig.class,
         AssistantServiceTest.Beans.class
 })
 class AssistantServiceTest {
@@ -107,6 +110,9 @@ class AssistantServiceTest {
 
     @Autowired
     private AssistantToolCallRepository toolCalls;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     private String email;
     private User customer;
@@ -286,6 +292,67 @@ class AssistantServiceTest {
         verify(chatModel).call(prompt.capture());
         List<Message> sent = prompt.getValue().getInstructions();
         assertThat(sent.get(sent.size() - 1).getText()).isEqualTo("My PIN is 1234, use it to send 500");
+    }
+
+    // ---- Metrics (issue #19). The numbers add up across tests, so each test compares before and after.
+
+    @Test
+    void anAnswerIsCountedWithItsTokens() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(reply("You have KES 1,500."));
+        double requestsBefore = count("assistant.requests", "outcome", "OK");
+        double inputBefore = count("assistant.tokens", "type", "input");
+        double outputBefore = count("assistant.tokens", "type", "output");
+
+        service.chat(email, null, "How much do I have?");
+
+        assertThat(count("assistant.requests", "outcome", "OK")).isEqualTo(requestsBefore + 1);
+        assertThat(count("assistant.tokens", "type", "input")).isEqualTo(inputBefore + 300);
+        assertThat(count("assistant.tokens", "type", "output")).isEqualTo(outputBefore + 25);
+        assertThat(meterRegistry.find("assistant.cost.estimate").counter().count()).isGreaterThan(0);
+        assertThat(meterRegistry.find("assistant.latency").tag("outcome", "OK").timer().count()).isGreaterThan(0);
+    }
+
+    @Test
+    void aFailedAnswerIsCountedAsFallback() {
+        when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("model down"));
+        double before = count("assistant.requests", "outcome", "FALLBACK");
+
+        service.chat(email, null, "How much do I have?");
+
+        assertThat(count("assistant.requests", "outcome", "FALLBACK")).isEqualTo(before + 1);
+    }
+
+    @Test
+    void aMaskedReplyIsCountedAsBlockedByTheOutputGuard() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(reply("Account 1000004821 has KES 1,500."));
+        double before = count("assistant.blocked", "reason", "output_guard");
+
+        service.chat(email, null, "What is my account number?");
+
+        assertThat(count("assistant.blocked", "reason", "output_guard")).isEqualTo(before + 1);
+    }
+
+    @Test
+    void aRateLimitedMessageIsCounted() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(reply("ok"));
+        double requestsBefore = count("assistant.requests", "outcome", "RATE_LIMITED");
+        double blockedBefore = count("assistant.blocked", "reason", "rate_limit");
+
+        for (int i = 0; i < 11; i++) {
+            service.chat(email, null, "Question " + i);
+        }
+
+        assertThat(count("assistant.requests", "outcome", "RATE_LIMITED")).isEqualTo(requestsBefore + 1);
+        assertThat(count("assistant.blocked", "reason", "rate_limit")).isEqualTo(blockedBefore + 1);
+    }
+
+    // The value of a counter with one tag, or 0 if nothing was counted yet
+    private double count(String name, String tagName, String tagValue) {
+        Counter counter = meterRegistry.find(name).tag(tagName, tagValue).counter();
+        if (counter == null) {
+            return 0;
+        }
+        return counter.count();
     }
 
     // A fake model reply with a model name and token counts

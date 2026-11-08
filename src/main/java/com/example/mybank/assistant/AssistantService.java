@@ -64,6 +64,7 @@ public class AssistantService {
     private final ConversationMessageRepository messageRepository;
     private final AssistantToolCallRepository toolCallRepository;
     private final OutputGuard outputGuard;
+    private final AssistantMetrics metrics;
     private final String configuredModel;
 
     public AssistantService(ChatClient.Builder chatClientBuilder,
@@ -75,6 +76,7 @@ public class AssistantService {
                             ConversationMessageRepository messageRepository,
                             AssistantToolCallRepository toolCallRepository,
                             OutputGuard outputGuard,
+                            AssistantMetrics metrics,
                             @Value("${spring.ai.openai.chat.options.model:unknown}") String configuredModel) {
         this.chatClient = chatClientBuilder.build();
         this.prompt = prompt;
@@ -85,12 +87,14 @@ public class AssistantService {
         this.messageRepository = messageRepository;
         this.toolCallRepository = toolCallRepository;
         this.outputGuard = outputGuard;
+        this.metrics = metrics;
         this.configuredModel = configuredModel;
     }
 
     public ChatAnswer chat(String email, UUID conversationId, String message) {
         // 1. Rate limit: nothing is saved and the model isn't called
         if (!rateLimiter.tryAcquire(email)) {
+            metrics.recordRateLimited();
             return new ChatAnswer(conversationId, null, RATE_LIMITED_TEXT, MessageOutcome.RATE_LIMITED,
                     new ArrayList<>(), new ArrayList<>());
         }
@@ -140,7 +144,11 @@ public class AssistantService {
                 outcome = MessageOutcome.FALLBACK;
             } else {
                 // 5. Catch anything the model should never show: account numbers, PINs, tokens
-                text = outputGuard.clean(text);
+                String cleaned = outputGuard.clean(text);
+                if (!cleaned.equals(text)) {
+                    metrics.recordBlocked(AssistantMetrics.BLOCKED_OUTPUT_GUARD);
+                }
+                text = cleaned;
                 outcome = MessageOutcome.OK;
             }
 
@@ -178,8 +186,15 @@ public class AssistantService {
         List<AssistantToolCall> toolCalls = linkToolCalls(tools.recordedCallIds(), answer.getId());
         List<String> sources = describeSources(toolCalls);
 
-        log.info("Assistant answer conversation={} user={} outcome={} latencyMs={} inputTokens={} outputTokens={} tools={}",
-                conversation.getId(), user.getId(), outcome, latencyMs, inputTokens, outputTokens, toolCalls.size());
+        metrics.recordAnswer(outcome, latencyMs, inputTokens, outputTokens);
+
+        // One line per answer, for searching the logs. Never the message text: it may hold personal details.
+        List<String> toolNames = new ArrayList<>();
+        for (AssistantToolCall toolCall : toolCalls) {
+            toolNames.add(toolCall.getToolName());
+        }
+        log.info("Assistant answer conversation={} user={} outcome={} latencyMs={} inputTokens={} outputTokens={} prompt={} tools={}",
+                conversation.getId(), user.getId(), outcome, latencyMs, inputTokens, outputTokens, prompt.version(), toolNames);
 
         // Confirm cards for anything the assistant prepared in this turn
         List<PendingActionView> pendingActions = tools.createdPendingActions();

@@ -1,6 +1,8 @@
 package com.example.mybank.assistant.tools;
 
+import com.example.mybank.assistant.AssistantMetrics;
 import com.example.mybank.assistant.PendingActionService;
+import com.example.mybank.assistant.TestMetricsConfig;
 import com.example.mybank.assistant.dto.PendingActionView;
 import com.example.mybank.assistant.entity.AssistantToolCall;
 import com.example.mybank.assistant.entity.PendingActionStatus;
@@ -44,6 +46,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -54,6 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import({
         AssistantToolsFactory.class, PendingActionService.class, AccountResolver.class, AccountServiceImpl.class,
         TransactionQueryServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
+        AssistantMetrics.class, TestMetricsConfig.class,
         AssistantToolsTest.Beans.class
 })
 class AssistantToolsTest {
@@ -87,6 +93,9 @@ class AssistantToolsTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     private User wanjiku;
     private Account wanjikuCurrent;
@@ -224,6 +233,30 @@ class AssistantToolsTest {
     }
 
     @Test
+    void toolCallsAndTheCallLimitAreCounted() {
+        double okBefore = count("assistant.tool.calls", "listMyAccounts", "OK");
+        double notFoundBefore = count("assistant.tool.calls", "getAccount", "NOT_FOUND");
+        double deniedBefore = count("assistant.tool.calls", "listMyAccounts", "DENIED");
+        Counter blocked = meterRegistry.find("assistant.blocked").tag("reason", "tool_limit").counter();
+        double blockedBefore = 0;
+        if (blocked != null) {
+            blockedBefore = blocked.count();
+        }
+
+        tools.getAccount("0000");          // not one of her accounts
+        for (int i = 0; i < 4; i++) {
+            tools.listMyAccounts();         // calls 2 to 5
+        }
+        tools.listMyAccounts();             // call 6: over the limit
+
+        assertThat(count("assistant.tool.calls", "getAccount", "NOT_FOUND")).isEqualTo(notFoundBefore + 1);
+        assertThat(count("assistant.tool.calls", "listMyAccounts", "OK")).isEqualTo(okBefore + 4);
+        assertThat(count("assistant.tool.calls", "listMyAccounts", "DENIED")).isEqualTo(deniedBefore + 1);
+        assertThat(meterRegistry.find("assistant.blocked").tag("reason", "tool_limit").counter().count())
+                .isEqualTo(blockedBefore + 1);
+    }
+
+    @Test
     void everyCallWritesAnAuditRowWithoutAMessageYet() {
         tools.listMyAccounts();
         tools.getAccount("9310");
@@ -281,6 +314,15 @@ class AssistantToolsTest {
 
         assertThat(result.status()).isEqualTo(ToolOutcome.DENIED);
         assertThat(tools.createdPendingActions()).isEmpty();
+    }
+
+    // How many times a tool was called with this outcome, or 0 if never
+    private double count(String name, String tool, String outcome) {
+        Counter counter = meterRegistry.find(name).tag("tool", tool).tag("outcome", outcome).counter();
+        if (counter == null) {
+            return 0;
+        }
+        return counter.count();
     }
 
     private AssistantToolCall lastCall() {

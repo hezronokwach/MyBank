@@ -30,17 +30,20 @@ public class FeedbackService {
     private final AssistantConversationRepository conversationRepository;
     private final AssistantFeedbackRepository feedbackRepository;
     private final OutputGuard outputGuard;
+    private final AssistantMetrics metrics;
 
     public FeedbackService(UserRepository userRepository,
                            ConversationMessageRepository messageRepository,
                            AssistantConversationRepository conversationRepository,
                            AssistantFeedbackRepository feedbackRepository,
-                           OutputGuard outputGuard) {
+                           OutputGuard outputGuard,
+                           AssistantMetrics metrics) {
         this.userRepository = userRepository;
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.feedbackRepository = feedbackRepository;
         this.outputGuard = outputGuard;
+        this.metrics = metrics;
     }
 
     @Transactional
@@ -88,6 +91,7 @@ public class FeedbackService {
         }
 
         AssistantFeedback saved = feedbackRepository.save(feedback);
+        metrics.recordFeedback(rating);
         return new FeedbackResponse(saved.getId(), saved.getMessageId(), saved.getRating(), saved.getComment());
     }
 }

@@ -1,5 +1,6 @@
 package com.example.mybank.assistant.tools;
 
+import com.example.mybank.assistant.AssistantMetrics;
 import com.example.mybank.assistant.PendingActionService;
 import com.example.mybank.assistant.dto.PendingActionView;
 import com.example.mybank.assistant.entity.AssistantToolCall;
@@ -77,6 +78,7 @@ public class AssistantTools {
     private final AssistantToolCallRepository toolCallRepository;
     private final ObjectMapper objectMapper;
     private final PendingActionService pendingActionService;
+    private final AssistantMetrics metrics;
 
     private int callCount = 0;
     private final List<UUID> recordedCallIds = new ArrayList<>();
@@ -85,7 +87,7 @@ public class AssistantTools {
     AssistantTools(String email, UUID userId, UUID conversationId, AccountService accountService,
                    TransactionQueryService transactionQueryService, AccountResolver accountResolver,
                    AssistantToolCallRepository toolCallRepository, ObjectMapper objectMapper,
-                   PendingActionService pendingActionService) {
+                   PendingActionService pendingActionService, AssistantMetrics metrics) {
         this.email = email;
         this.userId = userId;
         this.conversationId = conversationId;
@@ -95,6 +97,7 @@ public class AssistantTools {
         this.toolCallRepository = toolCallRepository;
         this.objectMapper = objectMapper;
         this.pendingActionService = pendingActionService;
+        this.metrics = metrics;
     }
 
     // =========================================================================
@@ -322,13 +325,18 @@ public class AssistantTools {
     // Counts this call and says whether the answer has gone over its limit
     private boolean isOverCallLimit() {
         callCount = callCount + 1;
-        return callCount > MAX_CALLS_PER_ANSWER;
+        if (callCount > MAX_CALLS_PER_ANSWER) {
+            metrics.recordBlocked(AssistantMetrics.BLOCKED_TOOL_LIMIT);
+            return true;
+        }
+        return false;
     }
 
-    // Saves the audit row, then hands the result back to the model
+    // Saves the audit row and counts the call, then hands the result back to the model
     private ToolResult finish(String toolName, Map<String, Object> arguments, ToolResult result, long start) {
         long durationMs = System.currentTimeMillis() - start;
         saveAuditRow(toolName, arguments, result.status(), durationMs);
+        metrics.recordToolCall(toolName, result.status());
         return result;
     }
 

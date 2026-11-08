@@ -38,13 +38,16 @@ public class PendingActionService {
     private final PendingActionRepository pendingActionRepository;
     private final UserRepository userRepository;
     private final AccountService accountService;
+    private final AssistantMetrics metrics;
 
     public PendingActionService(PendingActionRepository pendingActionRepository,
                                 UserRepository userRepository,
-                                AccountService accountService) {
+                                AccountService accountService,
+                                AssistantMetrics metrics) {
         this.pendingActionRepository = pendingActionRepository;
         this.userRepository = userRepository;
         this.accountService = accountService;
+        this.metrics = metrics;
     }
 
     // Called by the requestFreezeAccount tool. It only saves the request; nothing is frozen yet.
@@ -54,7 +57,9 @@ public class PendingActionService {
 
         PendingAction action = new PendingAction(userId, conversationId, PendingActionType.FREEZE_ACCOUNT,
                 accountNumber, shorten(reason), summary, expiresAt);
-        return pendingActionRepository.save(action);
+        PendingAction saved = pendingActionRepository.save(action);
+        metrics.recordAction(saved.getType(), saved.getStatus());
+        return saved;
     }
 
     /**
@@ -77,6 +82,7 @@ public class PendingActionService {
             action.setStatus(PendingActionStatus.EXPIRED);
             action.setDecidedAt(Instant.now());
             pendingActionRepository.save(action);
+            metrics.recordAction(action.getType(), PendingActionStatus.EXPIRED);
             throw new PendingActionConflictException("This request has expired. Ask the assistant again.");
         }
 
@@ -109,6 +115,7 @@ public class PendingActionService {
         }
 
         PendingAction saved = pendingActionRepository.save(action);
+        metrics.recordAction(saved.getType(), saved.getStatus());
         log.info("Pending action {} {} for user {}", saved.getId(), saved.getStatus(), saved.getUserId());
         return toView(saved);
     }
@@ -124,11 +131,14 @@ public class PendingActionService {
         action.setStatus(PendingActionStatus.CANCELLED);
         action.setDecidedAt(Instant.now());
         action.setResult("Cancelled. Nothing was changed.");
+        PendingAction saved;
         try {
-            return toView(pendingActionRepository.saveAndFlush(action));
+            saved = pendingActionRepository.saveAndFlush(action);
         } catch (ObjectOptimisticLockingFailureException e) {
             throw new PendingActionConflictException("This request is already being handled");
         }
+        metrics.recordAction(saved.getType(), saved.getStatus());
+        return toView(saved);
     }
 
     // Every minute: actions nobody confirmed in time become EXPIRED
@@ -146,6 +156,9 @@ public class PendingActionService {
         if (!expired.isEmpty()) {
             try {
                 pendingActionRepository.saveAll(expired);
+                for (PendingAction action : expired) {
+                    metrics.recordAction(action.getType(), PendingActionStatus.EXPIRED);
+                }
                 log.info("Expired {} pending actions", expired.size());
             } catch (ObjectOptimisticLockingFailureException e) {
                 // A customer confirmed or cancelled one at the same moment; the next run picks up the rest
