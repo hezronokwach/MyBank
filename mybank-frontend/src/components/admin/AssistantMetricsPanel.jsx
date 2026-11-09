@@ -25,10 +25,10 @@ function formatDate(isoText) {
 // One box with a big number, a label and an optional line underneath
 function MetricCard({ label, value, note }) {
     return (
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</p>
-            <p className="text-2xl font-extrabold text-bank-heading mt-2">{value}</p>
-            {note && <p className="text-xs text-gray-500 mt-1">{note}</p>}
+        <div className="metric-card">
+            <p className="metric-card__label">{label}</p>
+            <p className="metric-card__value">{value}</p>
+            {note && <p className="metric-card__note">{note}</p>}
         </div>
     );
 }
@@ -36,12 +36,12 @@ function MetricCard({ label, value, note }) {
 // A group of cards with a heading
 function MetricGroup({ title, children }) {
     return (
-        <div className="mb-6">
-            <h3 className="text-sm font-bold text-gray-700 mb-3">{title}</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <section className="metric-group">
+            <h2>{title}</h2>
+            <div className="metric-grid">
                 {children}
             </div>
-        </div>
+        </section>
     );
 }
 
@@ -52,28 +52,36 @@ const AssistantMetricsPanel = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
 
-    const loadMetrics = async () => {
-        setIsLoading(true);
-        setHasError(false);
-        try {
-            const response = await api.get('/admin/assistant/metrics');
-            setMetrics(response.data);
-        } catch (error) {
-            console.error('Failed to fetch assistant metrics', error);
-            setHasError(true);
-        }
-        setIsLoading(false);
-    };
+    // Goes up by one each time Refresh is pressed, which loads the numbers again
+    const [refreshCount, setRefreshCount] = useState(0);
 
+    // Loads the numbers when the page opens and after every Refresh
     useEffect(() => {
-        loadMetrics();
-    }, []);
+        const fetchMetrics = async () => {
+            try {
+                const response = await api.get('/admin/assistant/metrics');
+                setMetrics(response.data);
+                setHasError(false);
+            } catch (error) {
+                console.error('Failed to fetch assistant metrics', error);
+                setHasError(true);
+            }
+            setIsLoading(false);
+        };
+        fetchMetrics();
+    }, [refreshCount]);
+
+    // The Refresh button
+    const loadMetrics = () => {
+        setIsLoading(true);
+        setRefreshCount(refreshCount + 1);
+    };
 
     let content;
     if (hasError) {
-        content = <p className="text-sm text-red-600">Couldn't load the assistant metrics. Press Refresh to try again.</p>;
+        content = <p className="message-error">Couldn't load the assistant stats. Press Refresh to try again.</p>;
     } else if (metrics === null) {
-        content = <p className="text-sm text-gray-500">Loading…</p>;
+        content = <p className="message-muted">Loading…</p>;
     } else {
         const totalAnswers = metrics.answersOk + metrics.answersFailed + metrics.answersProviderLimited;
         const totalRatings = metrics.thumbsUp + metrics.thumbsDown;
@@ -116,26 +124,23 @@ const AssistantMetricsPanel = () => {
     }
 
     return (
-        <section className="bg-gray-50 border border-gray-100 rounded-3xl p-6 mb-8">
-            <div className="flex items-start justify-between gap-4 mb-6">
+        <>
+            <header className="page-header">
                 <div>
-                    <h2 className="text-xl font-extrabold text-bank-heading">Assistant</h2>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="eyebrow">Admin</p>
+                    <h1>Assistant stats</h1>
+                    <p>
                         Totals for all customers
-                        {metrics && <> since {formatDate(metrics.countingSince)} (the last restart)</>}
+                        {metrics && <> since {formatDate(metrics.countingSince)} (the last restart)</>}.
+                        No messages or account details are shown here.
                     </p>
                 </div>
-                <button
-                    type="button"
-                    onClick={loadMetrics}
-                    disabled={isLoading}
-                    className="px-4 py-2 text-sm text-indigo-700 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition font-bold"
-                >
+                <button type="button" onClick={loadMetrics} disabled={isLoading} className="button button--secondary">
                     {isLoading ? 'Loading…' : 'Refresh'}
                 </button>
-            </div>
+            </header>
             {content}
-        </section>
+        </>
     );
 };
 

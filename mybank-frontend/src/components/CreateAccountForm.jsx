@@ -5,7 +5,7 @@ import { useNotification } from './notificationContext';
 
 const CreateAccountForm = () => {
     const [type, setType] = useState('SAVINGS');
-    const [currency, setCurrency] = useState('USD');
+    const [currency, setCurrency] = useState('KES');
     const [pin, setPin] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
@@ -28,7 +28,8 @@ const CreateAccountForm = () => {
     return (
         <form onSubmit={handleCreate} className="transaction-form">
             <p className="eyebrow">Accounts</p>
-            <h1>Create new account</h1>
+            <h1>Open another account</h1>
+            <p className="form-intro">New accounts start as waiting for approval. An admin activates them.</p>
             <label htmlFor="type">Account Type</label>
             <select id="type" value={type} onChange={(e) => setType(e.target.value)}>
                 <option value="SAVINGS">Savings</option>

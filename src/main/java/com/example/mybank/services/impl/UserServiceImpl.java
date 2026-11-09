@@ -12,6 +12,7 @@ import com.example.mybank.enums.UserRole;
 import com.example.mybank.exceptions.DuplicateResourceException;
 import com.example.mybank.exceptions.UnauthorizedException;
 import com.example.mybank.exceptions.UserNotFoundException;
+import com.example.mybank.dto.responses.UserResponse;
 import com.example.mybank.mappers.UserMapper;
 import com.example.mybank.repository.AccountRepository;
 import com.example.mybank.repository.UserRepository;
@@ -111,5 +112,14 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
         return user.getRole().name();
+    }
+
+    // The signed-in user's own details, for example to greet them by name. No password or PIN.
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        return userMapper.toUserResponse(user);
     }
 }

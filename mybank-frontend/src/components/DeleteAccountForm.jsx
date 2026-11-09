@@ -14,7 +14,7 @@ const DeleteAccountForm = ({ accountNumber }) => {
         setIsSubmitting(true);
         try {
             await api.delete(`/accounts/${accountNumber}`, { data: { pin } });
-            notify('Account deleted successfully.');
+            notify('Account closed.');
             navigate('/dashboard');
         } catch (error) {
             notify(error.response?.data?.message || 'We could not delete your account. Please try again.', 'error');
@@ -26,11 +26,11 @@ const DeleteAccountForm = ({ accountNumber }) => {
     return (
         <form onSubmit={handleDelete} className="transaction-form">
             <p className="eyebrow">Accounts</p>
-            <h1>Delete Account</h1>
-            <p className="form-intro">Are you sure? This action cannot be undone.</p>
+            <h1>Close this account</h1>
+            <p className="form-warning">Closing account •••{accountNumber ? accountNumber.slice(-4) : ''} can't be undone. Enter your PIN to confirm.</p>
             <label htmlFor="pin">PIN</label>
             <input id="pin" type="password" value={pin} onChange={(e) => setPin(e.target.value)} required />
-            <button type="submit" className="button button--danger" disabled={isSubmitting}>{isSubmitting ? 'Processing…' : 'Delete Account'}</button>
+            <button type="submit" className="button button--danger" disabled={isSubmitting}>{isSubmitting ? 'Closing…' : 'Close account'}</button>
         </form>
     );
 };
