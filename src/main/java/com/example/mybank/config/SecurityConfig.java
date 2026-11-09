@@ -87,6 +87,10 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/h2-console/**", "/h2-console").permitAll()
+                        // Health is public so Render can check the app is up; it only says UP or DOWN
+                        .requestMatchers("/actuator/health").permitAll()
+                        // Metrics show how the app is used, so only admins can see them
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider()) // Bind explicit provider

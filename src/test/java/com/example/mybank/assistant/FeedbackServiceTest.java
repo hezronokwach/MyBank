@@ -13,6 +13,8 @@ import com.example.mybank.entity.User;
 import com.example.mybank.enums.UserRole;
 import com.example.mybank.exceptions.InvalidFeedbackException;
 import com.example.mybank.exceptions.MessageNotFoundException;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({FeedbackService.class, OutputGuard.class})
+@Import({FeedbackService.class, OutputGuard.class, AssistantMetrics.class, TestMetricsConfig.class})
 class FeedbackServiceTest {
 
     private static final String WANJIKU = "wanjiku@test.local";
@@ -47,6 +49,9 @@ class FeedbackServiceTest {
 
     @Autowired
     private AssistantFeedbackRepository feedback;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     private ConversationMessage wanjikuQuestion;
     private ConversationMessage wanjikuAnswer;
@@ -86,6 +91,18 @@ class FeedbackServiceTest {
         assertThat(all).hasSize(1);
         assertThat(all.get(0).getRating()).isEqualTo(-1);
         assertThat(all.get(0).getComment()).isNull();
+    }
+
+    @Test
+    void thumbsUpAndDownAreCounted() {
+        double upBefore = count("up");
+        double downBefore = count("down");
+
+        service.giveFeedback(WANJIKU, wanjikuAnswer.getId(), 1, null);
+        service.giveFeedback(WANJIKU, wanjikuAnswer.getId(), -1, null);
+
+        assertThat(count("up")).isEqualTo(upBefore + 1);
+        assertThat(count("down")).isEqualTo(downBefore + 1);
     }
 
     @Test
@@ -130,5 +147,14 @@ class FeedbackServiceTest {
 
     private ConversationMessage answer(UUID conversationId, String text) {
         return new ConversationMessage(conversationId, text, "v1", "test-model", 100, 20, 500, MessageOutcome.OK);
+    }
+
+    // How many thumbs "up" or "down" were counted, or 0 if none yet
+    private double count(String rating) {
+        Counter counter = meterRegistry.find("assistant.feedback").tag("rating", rating).counter();
+        if (counter == null) {
+            return 0;
+        }
+        return counter.count();
     }
 }

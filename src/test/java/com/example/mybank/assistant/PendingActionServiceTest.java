@@ -16,6 +16,8 @@ import com.example.mybank.exceptions.PendingActionNotFoundException;
 import com.example.mybank.mappers.AccountMapper;
 import com.example.mybank.services.impl.AccountServiceImpl;
 import com.example.mybank.util.AccountNumberGenerator;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 @Import({
         PendingActionService.class, AccountServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
+        AssistantMetrics.class, TestMetricsConfig.class,
         PendingActionServiceTest.Beans.class
 })
 class PendingActionServiceTest {
@@ -60,6 +63,9 @@ class PendingActionServiceTest {
 
     @Autowired
     private PendingActionRepository pendingActions;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     private User wanjiku;
 
@@ -92,6 +98,18 @@ class PendingActionServiceTest {
         assertThat(confirmed.status()).isEqualTo(PendingActionStatus.CONFIRMED);
         assertThat(confirmed.result()).isEqualTo("Account ...4821 is frozen. To unfreeze it, contact support.");
         assertThat(accountStatus()).isEqualTo(AccountStatus.FROZEN);
+    }
+
+    @Test
+    void creatingAndConfirmingAreCounted() {
+        double pendingBefore = count("assistant.actions", "type", "FREEZE_ACCOUNT", "status", "PENDING");
+        double confirmedBefore = count("assistant.actions", "type", "FREEZE_ACCOUNT", "status", "CONFIRMED");
+
+        PendingAction action = service.createFreeze(wanjiku.getId(), null, "1000004821", "lost phone");
+        service.confirm(WANJIKU, action.getId());
+
+        assertThat(count("assistant.actions", "type", "FREEZE_ACCOUNT", "status", "PENDING")).isEqualTo(pendingBefore + 1);
+        assertThat(count("assistant.actions", "type", "FREEZE_ACCOUNT", "status", "CONFIRMED")).isEqualTo(confirmedBefore + 1);
     }
 
     @Test
@@ -178,5 +196,14 @@ class PendingActionServiceTest {
                 .createQuery("select a.status from Account a where a.accountNumber = :n", AccountStatus.class)
                 .setParameter("n", "1000004821")
                 .getSingleResult();
+    }
+
+    // The value of a counter, or 0 if nothing was counted yet
+    private double count(String name, String tagName, String tagValue, String tagName2, String tagValue2) {
+        Counter counter = meterRegistry.find(name).tag(tagName, tagValue).tag(tagName2, tagValue2).counter();
+        if (counter == null) {
+            return 0;
+        }
+        return counter.count();
     }
 }

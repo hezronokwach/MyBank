@@ -1,5 +1,6 @@
 package com.example.mybank.assistant.tools;
 
+import com.example.mybank.assistant.AssistantMetrics;
 import com.example.mybank.assistant.PendingActionService;
 import com.example.mybank.assistant.repository.AssistantToolCallRepository;
 import com.example.mybank.entity.User;
@@ -25,11 +26,12 @@ public class AssistantToolsFactory {
     private final AssistantToolCallRepository toolCallRepository;
     private final ObjectMapper objectMapper;
     private final PendingActionService pendingActionService;
+    private final AssistantMetrics metrics;
 
     public AssistantToolsFactory(UserRepository userRepository, AccountService accountService,
                                  TransactionQueryService transactionQueryService, AccountResolver accountResolver,
                                  AssistantToolCallRepository toolCallRepository, ObjectMapper objectMapper,
-                                 PendingActionService pendingActionService) {
+                                 PendingActionService pendingActionService, AssistantMetrics metrics) {
         this.userRepository = userRepository;
         this.accountService = accountService;
         this.transactionQueryService = transactionQueryService;
@@ -37,6 +39,7 @@ public class AssistantToolsFactory {
         this.toolCallRepository = toolCallRepository;
         this.objectMapper = objectMapper;
         this.pendingActionService = pendingActionService;
+        this.metrics = metrics;
     }
 
     // Tools for one answer in a conversation; pending actions are linked to that conversation
@@ -44,7 +47,7 @@ public class AssistantToolsFactory {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User email not found: " + email));
         return new AssistantTools(email, user.getId(), conversationId, accountService, transactionQueryService,
-                accountResolver, toolCallRepository, objectMapper, pendingActionService);
+                accountResolver, toolCallRepository, objectMapper, pendingActionService, metrics);
     }
 
     // Tools with no conversation, used by tests
