@@ -3,6 +3,7 @@ package com.example.mybank.controller;
 import com.example.mybank.dto.requests.LoginRequest;
 import com.example.mybank.dto.requests.RegisterRequest;
 import com.example.mybank.dto.responses.AuthResponse;
+import com.example.mybank.dto.responses.UserResponse;
 import com.example.mybank.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -40,5 +41,15 @@ public class AuthController {
     public ResponseEntity<String> getRole(Authentication authentication) {
         String email = authentication.getName();
         return ResponseEntity.ok(userService.getUserRoleByEmail(email));
+    }
+
+    /**
+     * GET /api/v1/auth/me
+     * The signed-in user's own name and email, taken from the JWT. Used to greet them on the Dashboard.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getMe(Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(userService.getUserByEmail(email));
     }
 }

@@ -85,6 +85,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        // Your own details need a login; register and login don't
+                        .requestMatchers("/api/v1/auth/me", "/api/v1/auth/me/**").authenticated()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/h2-console/**", "/h2-console").permitAll()
                         // Health is public so Render can check the app is up; it only says UP or DOWN
