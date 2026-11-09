@@ -13,6 +13,7 @@ const Dashboard = () => {
     const [isBalanceHidden, setIsBalanceHidden] = useState(() => localStorage.getItem('hideBalance') === 'true');
     const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [firstName, setFirstName] = useState('');
     // Goes up by one whenever the accounts should be loaded again (for example after the assistant froze one)
     const [accountsVersion, setAccountsVersion] = useState(0);
     const navigate = useNavigate();
@@ -31,6 +32,19 @@ const Dashboard = () => {
         };
         fetchRole();
     }, [navigate]);
+
+    // The customer's first name, for the greeting
+    useEffect(() => {
+        const fetchName = async () => {
+            try {
+                const response = await api.get('/auth/me');
+                setFirstName(response.data.firstName || '');
+            } catch (error) {
+                console.error('Failed to fetch your name', error);
+            }
+        };
+        fetchName();
+    }, []);
 
     useEffect(() => {
         const fetchAccounts = async () => {
@@ -83,6 +97,13 @@ const Dashboard = () => {
             : `Sent to account •••${transaction.counterpartyLast4 || ''}`;
     };
 
+    const describeStatus = (status) => {
+        if (status === 'ACTIVE') return 'Active';
+        if (status === 'FROZEN') return 'Frozen';
+        if (status === 'CLOSED') return 'Closed';
+        return 'Waiting for approval';
+    };
+
     const formatAccount = (currentAccount) => `•••${currentAccount.accountNumber.slice(-4)} · ${currentAccount.type.charAt(0) + currentAccount.type.slice(1).toLowerCase()}`;
 
     const toggleBalanceVisibility = () => {
@@ -92,6 +113,11 @@ const Dashboard = () => {
         });
     };
 
+    let greeting = 'Good to see you.';
+    if (firstName) {
+        greeting = 'Good to see you, ' + firstName + '.';
+    }
+
     if (isAdmin) {
         return null; // Or some loading indicator while redirecting
     }
@@ -100,20 +126,21 @@ const Dashboard = () => {
         <Layout>
             <div className="dashboard-shell">
                 <header className="dashboard-heading">
-                    <div><p className="eyebrow">My money</p><h1>Good to see you.</h1></div>
+                    <div><p className="eyebrow">My money</p><h1>{greeting}</h1></div>
                     {accounts.length > 1 && (
-                        <select 
-                            className="dashboard-account-switcher"
-                            value={selectedAccountIndex} 
-                            onChange={(e) => setSelectedAccountIndex(Number(e.target.value))}
-                            aria-label="Choose account"
-                        >
+                        <div className="account-chips" role="group" aria-label="Choose account">
                             {accounts.map((acc, index) => (
-                                <option key={acc.accountNumber} value={index}>
+                                <button
+                                    key={acc.accountNumber}
+                                    type="button"
+                                    className={index === selectedAccountIndex ? 'account-chip account-chip--active' : 'account-chip'}
+                                    aria-pressed={index === selectedAccountIndex}
+                                    onClick={() => setSelectedAccountIndex(index)}
+                                >
                                     {formatAccount(acc)}
-                                </option>
+                                </button>
                             ))}
-                        </select>
+                        </div>
                     )}
                 </header>
                 {isLoading ? (
@@ -121,7 +148,7 @@ const Dashboard = () => {
                 ) : account ? (
                     <>
                         <section className="balance-card">
-                            <div className="balance-card__top"><span>{account.type.charAt(0) + account.type.slice(1).toLowerCase()} account</span><span className="balance-card__status">{account.status === 'ACTIVE' ? 'Active' : 'Pending'}</span></div>
+                            <div className="balance-card__top"><span>{account.type.charAt(0) + account.type.slice(1).toLowerCase()} account</span><span className="balance-card__status">{describeStatus(account.status)}</span></div>
                             <div className="balance-card__balance-heading"><p className="balance-card__label">Available balance</p><button type="button" onClick={toggleBalanceVisibility} aria-pressed={isBalanceHidden} aria-label={isBalanceHidden ? 'Show balance' : 'Hide balance'}>{isBalanceHidden ? 'Show' : 'Hide'}</button></div>
                             <p className="balance-card__amount">{isBalanceHidden ? `${account.currency} ••••••` : formatMoney(account.balance, account.currency)}</p>
                             <div className="balance-card__footer"><span>Account •••{account.accountNumber.slice(-4)}</span><span>{account.currency}</span></div>
@@ -145,14 +172,26 @@ const Dashboard = () => {
                                 ))}
                             </div> : <div className="activity-empty"><span>⌁</span><p>No transactions yet</p><small>Your deposits, withdrawals, and transfers will appear here.</small></div>}
                         </section>
-                        <details className="account-options">
-                            <summary>Account options</summary>
-                            <div>
-                                <button onClick={() => navigate('/create-account')}>Create another account</button>
-                                <button onClick={() => navigate('/transfer-ownership', { state: { accountNumber: account.accountNumber } })}>Transfer ownership</button>
-                                <button className="account-options__danger" onClick={() => navigate('/delete-account', { state: { accountNumber: account.accountNumber } })}>Close this account</button>
+                        <section className="card manage-card">
+                            <div className="section-heading"><div><h2>Manage this account</h2><p>Account •••{account.accountNumber.slice(-4)}</p></div></div>
+                            <div className="manage-options">
+                                <button type="button" className="manage-option" onClick={() => navigate('/create-account')}>
+                                    <span className="manage-option__icon" aria-hidden="true">+</span>
+                                    <strong>Open another account</strong>
+                                    <span>Savings, current or fixed deposit</span>
+                                </button>
+                                <button type="button" className="manage-option" onClick={() => navigate('/transfer-ownership', { state: { accountNumber: account.accountNumber } })}>
+                                    <span className="manage-option__icon" aria-hidden="true">⇄</span>
+                                    <strong>Transfer ownership</strong>
+                                    <span>Give this account to another customer</span>
+                                </button>
+                                <button type="button" className="manage-option manage-option--danger" onClick={() => navigate('/delete-account', { state: { accountNumber: account.accountNumber } })}>
+                                    <span className="manage-option__icon" aria-hidden="true">×</span>
+                                    <strong>Close this account</strong>
+                                    <span>This can't be undone</span>
+                                </button>
                             </div>
-                        </details>
+                        </section>
                     </>
                 ) : (
                     <div className="activity-empty dashboard-empty">
