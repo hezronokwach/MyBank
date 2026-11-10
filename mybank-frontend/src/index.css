@@ -494,11 +494,84 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .message-muted { color: var(--muted); font-size: .9rem; }
 
 /* =========================================================================
+   Virtual card
+   ========================================================================= */
+.card-page .back-link { display: inline-block; font-size: .88rem; margin-bottom: .75rem; }
+.card-page-grid { display: grid; gap: 1.25rem; grid-template-columns: 1.1fr 1fr; margin-bottom: 1.5rem; }
+.card-panel { padding: 1.4rem; }
+.card-panel__title { color: var(--ink); font-size: 1.25rem; letter-spacing: -.03em; margin: .35rem 0 .5rem; }
+.card-panel__text { color: var(--muted); font-size: .9rem; line-height: 1.6; margin: 0 0 1rem; }
+.card-panel__wide { margin-top: 1rem; width: 100%; }
+.card-notice { background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); display: flex; flex-direction: column; font-size: .85rem; gap: .25rem; line-height: 1.5; margin: 0 0 1rem; padding: .8rem .95rem; }
+.card-notice strong { color: var(--ink); }
+.card-notice--warning { background: var(--warning-soft); border-color: #f3d9b1; color: var(--warning); }
+.card-notice--warning strong { color: var(--warning); }
+
+/* Forms inside a card panel (lighter than the full-page money forms) */
+.inline-form { display: flex; flex-direction: column; }
+.inline-form label { color: var(--text); font-size: .82rem; font-weight: 600; margin: .9rem 0 .35rem; }
+.inline-form label:first-child { margin-top: 0; }
+.inline-form input, .inline-form select { background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--ink); outline: 0; padding: .7rem .8rem; width: 100%; }
+.inline-form input:focus, .inline-form select:focus { background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 4px rgba(47, 111, 237, .14); }
+.inline-form .button { margin-top: 1.25rem; }
+.inline-form__hint { color: var(--muted); font-size: .76rem; margin-top: .35rem; }
+
+/* "Add money" / "Move to account" switch */
+.segmented { background: var(--surface-soft); border: 1px solid var(--border); border-radius: 999px; display: flex; gap: .25rem; margin-bottom: 1.25rem; padding: .25rem; }
+.segmented__option { background: transparent; border: 0; border-radius: 999px; color: var(--muted); flex: 1; font-size: .85rem; font-weight: 650; padding: .55rem .75rem; }
+.segmented__option--active { background: var(--surface); box-shadow: var(--shadow-sm); color: var(--brand); }
+
+/* The card picture */
+.virtual-card-wrap { display: flex; flex-direction: column; }
+.virtual-card {
+  aspect-ratio: 1.586;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(255, 255, 255, .18), transparent 40%),
+    linear-gradient(135deg, #0b1d36 0%, #13315c 45%, #1d6fd8 120%);
+  border-radius: 18px;
+  box-shadow: 0 20px 40px rgba(11, 29, 54, .35);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  max-width: 24rem;
+  padding: 1.25rem 1.4rem;
+  width: 100%;
+}
+.virtual-card--frozen { filter: grayscale(.85); opacity: .8; }
+.virtual-card__top { align-items: center; display: flex; justify-content: space-between; }
+.virtual-card__brand { font-size: 1.05rem; font-weight: 800; letter-spacing: -.03em; }
+.virtual-card__label { background: rgba(255, 255, 255, .16); border-radius: 999px; font-size: .68rem; font-weight: 700; letter-spacing: .08em; padding: .2rem .55rem; text-transform: uppercase; }
+.virtual-card__chip { background: linear-gradient(135deg, #f4d58d, #c9a24b); border-radius: 6px; height: 1.9rem; width: 2.6rem; }
+.virtual-card__number { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: clamp(1.05rem, 3.4vw, 1.35rem); letter-spacing: .12em; margin: 0; white-space: nowrap; }
+.virtual-card__bottom { display: flex; gap: 1.5rem; }
+.virtual-card__bottom strong { display: block; font-size: .85rem; letter-spacing: .04em; }
+.virtual-card__small { color: rgba(255, 255, 255, .65); display: block; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; }
+.virtual-card__balance { align-items: baseline; display: flex; justify-content: space-between; margin-top: 1.1rem; max-width: 24rem; }
+.virtual-card__balance span { color: var(--muted); font-size: .82rem; font-weight: 600; }
+.virtual-card__balance strong { color: var(--ink); font-size: 1.5rem; letter-spacing: -.04em; }
+.reveal-box { align-items: center; background: var(--accent-soft); border-radius: var(--radius-sm); color: var(--brand); display: flex; font-size: .82rem; font-weight: 600; justify-content: space-between; margin-top: 1rem; max-width: 24rem; padding: .55rem .55rem .55rem .9rem; }
+.reveal-form { margin-top: 1rem; }
+.reveal-form__row { display: flex; gap: .5rem; }
+.reveal-form__row input { max-width: 8rem; }
+.reveal-form__row .button { margin-top: 0; }
+.card-history { margin-bottom: 1rem; }
+
+/* "Your card" on the dashboard */
+.card-summary { align-items: center; display: flex; gap: 1rem; margin-top: 1.5rem; padding: 1.1rem 1.4rem; }
+.card-summary__icon { align-items: center; background: linear-gradient(135deg, #13315c, #1d6fd8); border-radius: 10px; color: #fff; display: flex; flex: 0 0 auto; font-size: 1.1rem; height: 2.6rem; justify-content: center; width: 2.6rem; }
+.card-summary__text { flex: 1; min-width: 0; }
+.card-summary__text h2 { color: var(--ink); font-size: .98rem; margin: 0 0 .15rem; }
+.card-summary__text p { color: var(--muted); font-size: .8rem; margin: 0; }
+.card-summary__text strong { color: var(--ink); }
+
+/* =========================================================================
    Small screens
    ========================================================================= */
 @media (max-width: 860px) {
   .summary-tiles, .metric-grid { grid-template-columns: repeat(2, 1fr); }
   .manage-options { grid-template-columns: 1fr; }
+  .card-page-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
   .home-nav, .home-main { padding-left: 1.25rem; padding-right: 1.25rem; }
