@@ -40,6 +40,13 @@ public class ReferenceGenerator {
         return prefix + number;
     }
 
+    // A refunded card fee: RFD followed by 7 random digits
+    public String generateCardRefund() {
+        String prefix = "RFD";
+        int number = random.nextInt(9000000) + 1000000;
+        return prefix + number;
+    }
+
     public String generateTransfer() {
         // Standard bank branch/type prefix (e.g., DEP)
         String prefix = "TRN";

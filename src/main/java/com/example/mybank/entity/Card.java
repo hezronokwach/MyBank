@@ -63,6 +63,9 @@ public class Card {
     @Column(name = "approved_at")
     private Instant approvedAt;
 
+    @Column(name = "rejected_at")
+    private Instant rejectedAt;
+
     // Email of the admin who approved or rejected it
     @Column(name = "decided_by")
     private String decidedBy;
@@ -178,6 +181,14 @@ public class Card {
 
     public void setApprovedAt(Instant approvedAt) {
         this.approvedAt = approvedAt;
+    }
+
+    public Instant getRejectedAt() {
+        return rejectedAt;
+    }
+
+    public void setRejectedAt(Instant rejectedAt) {
+        this.rejectedAt = rejectedAt;
     }
 
     public String getDecidedBy() {
