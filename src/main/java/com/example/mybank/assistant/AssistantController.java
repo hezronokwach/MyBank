@@ -41,7 +41,7 @@ public class AssistantController {
      * Ask the assistant a question. The customer always comes from the JWT, never from the request body.
      */
     @PostMapping("/chat")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ChatAnswer> chat(
             @Valid @RequestBody ChatRequest request,
             Authentication authentication
@@ -61,7 +61,7 @@ public class AssistantController {
      * A transfer card sends {"pin": "..."}; the PIN never goes through the chat or the model.
      */
     @PostMapping("/actions/{actionId}/confirm")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<PendingActionView> confirmAction(
             @PathVariable UUID actionId,
             @RequestBody(required = false) ConfirmActionRequest request,
@@ -81,7 +81,7 @@ public class AssistantController {
      * The customer pressed Cancel on a card. Nothing is changed.
      */
     @PostMapping("/actions/{actionId}/cancel")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<PendingActionView> cancelAction(
             @PathVariable UUID actionId,
             Authentication authentication
@@ -96,7 +96,7 @@ public class AssistantController {
      * Thumbs up (1) or thumbs down (-1) on one of the customer's assistant answers, with an optional comment.
      */
     @PostMapping("/feedback")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<FeedbackResponse> giveFeedback(
             @Valid @RequestBody FeedbackRequest request,
             Authentication authentication
