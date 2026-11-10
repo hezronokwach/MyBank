@@ -2,24 +2,18 @@ package com.example.mybank.config;
 
 import com.example.mybank.entity.User;
 import com.example.mybank.enums.UserRole;
-import com.example.mybank.repository.AccountRepository;
 import com.example.mybank.repository.UserRepository;
-import com.example.mybank.util.AccountNumberGenerator;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.math.BigDecimal;
-
 @Configuration
 public class DataLoader {
 
+    // Creates the admin on first start. The admin approves customers' accounts and never has a bank account of its own.
     @Bean
-    CommandLineRunner initDatabase(UserRepository userRepository,
-                                   AccountRepository accountRepository,
-                                   AccountNumberGenerator accountNumberGenerator,
-                                   PasswordEncoder passwordEncoder) {
+    CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
             if (userRepository.findByEmail("admin@mybank.com").isEmpty()) {
                 User admin = new User(
@@ -29,7 +23,7 @@ public class DataLoader {
                         "System",
                         UserRole.ROLE_ADMIN
                 );
-                User savedUser = userRepository.save(admin);
+                userRepository.save(admin);
             }
         };
     }

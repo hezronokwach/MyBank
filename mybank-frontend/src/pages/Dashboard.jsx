@@ -12,26 +12,11 @@ const Dashboard = () => {
     const [activityError, setActivityError] = useState(false);
     const [isBalanceHidden, setIsBalanceHidden] = useState(() => localStorage.getItem('hideBalance') === 'true');
     const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
-    const [isAdmin, setIsAdmin] = useState(false);
     const [firstName, setFirstName] = useState('');
     // Goes up by one whenever the accounts should be loaded again (for example after the assistant froze one)
     const [accountsVersion, setAccountsVersion] = useState(0);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchRole = async () => {
-            try {
-                const response = await api.get('/auth/me/role');
-                if (response.data === 'ROLE_ADMIN') {
-                    setIsAdmin(true);
-                    navigate('/admin');
-                }
-            } catch (error) {
-                console.error('Failed to fetch user role', error);
-            }
-        };
-        fetchRole();
-    }, [navigate]);
 
     // The customer's first name, for the greeting
     useEffect(() => {
@@ -118,12 +103,8 @@ const Dashboard = () => {
         greeting = 'Good to see you, ' + firstName + '.';
     }
 
-    if (isAdmin) {
-        return null; // Or some loading indicator while redirecting
-    }
-
     return (
-        <Layout>
+        <Layout access="customer">
             <div className="dashboard-shell">
                 <header className="dashboard-heading">
                     <div><p className="eyebrow">My money</p><h1>{greeting}</h1></div>

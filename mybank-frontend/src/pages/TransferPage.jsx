@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 const TransferPage = () => {
     return (
-        <Layout><div className="form-page"><Link to="/dashboard" className="back-link">← Back to dashboard</Link><TransferForm /></div></Layout>
+        <Layout access="customer"><div className="form-page"><Link to="/dashboard" className="back-link">← Back to dashboard</Link><TransferForm /></div></Layout>
     );
 };
 

@@ -46,7 +46,7 @@ public class AccountController {
      * Fetch all bank accounts owned by the currently authenticated user.
      */
     @GetMapping("/me")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<List<AccountResponse>> getMyAccounts(Authentication authentication) {
         String userEmail = authentication.getName();
         List<AccountResponse> accounts = accountService.getMyAccounts(userEmail);
@@ -65,7 +65,7 @@ public class AccountController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<AccountResponse> createAccount(
             Authentication authentication,
             @Valid @RequestBody CreateAccountRequest request
@@ -80,7 +80,7 @@ public class AccountController {
      * Fetch a specific bank account owned by the authenticated user.
      */
     @GetMapping("/{accountNumber}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<AccountResponse> getAccountByNumber(
             @PathVariable String accountNumber,
             Authentication authentication
@@ -95,7 +95,7 @@ public class AccountController {
      * The signed-in customer can only see activity for their own account.
      */
     @GetMapping("/{accountNumber}/transactions")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<List<TransactionHistoryResponse>> getRecentTransactions(
             @PathVariable String accountNumber,
             @RequestParam(defaultValue = "5") int limit,
@@ -129,7 +129,7 @@ public class AccountController {
     }
 
     @PatchMapping("/{accountNumber}/details")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<AccountResponse> updateAccountDetails(
             @PathVariable String accountNumber,
             @Valid @RequestBody AccountUpdateInfoRequest request,
@@ -141,7 +141,7 @@ public class AccountController {
     }
 
     @DeleteMapping("/{accountNumber}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> deleteAccount(
             @PathVariable String accountNumber,
             @Valid @RequestBody PinRequest request,
@@ -153,7 +153,7 @@ public class AccountController {
     }
 
     @PatchMapping("/{accountNumber}/transfer")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<AccountResponse> transferAccountOwner(
             @PathVariable String accountNumber,
             @Valid @RequestBody TransferOwnershipRequest request,
@@ -165,7 +165,7 @@ public class AccountController {
     }
 
     @PatchMapping("/{accountNumber}/deposits")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TransactionResponse> deposit(
             @PathVariable String accountNumber,
             @Valid @RequestBody TransactionRequest request,
@@ -177,7 +177,7 @@ public class AccountController {
     }
 
     @PatchMapping("/{accountNumber}/withdrawals")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TransactionResponse> withdraw(
             @PathVariable String accountNumber,
             @Valid @RequestBody TransactionRequest request,
@@ -189,7 +189,7 @@ public class AccountController {
     }
 
     @PatchMapping("/transfers")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TransactionResponse> transfers(
             @RequestHeader("Idempotency-key") String idempotencyKey,
             @Valid @RequestBody TransferRequest request,
