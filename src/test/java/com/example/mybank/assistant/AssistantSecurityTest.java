@@ -251,6 +251,39 @@ class AssistantSecurityTest {
     }
 
     @Test
+    void confirmingAnotherCustomersTransferReturns404AndMovesNoMoney() throws Exception {
+        // Otieno prepared a transfer from his own account; Wanjiku tries to confirm it
+        PendingAction theirs = pendingActionRepository.save(new PendingAction(otieno.getId(), null, "1000007777",
+                "1000004821", new BigDecimal("500"), "Send KES 500.00 from ...7777 to ...4821", Instant.now().plusSeconds(300)));
+
+        mockMvc.perform(post("/api/v1/assistant/actions/" + theirs.getId() + "/confirm")
+                        .header("Authorization", "Bearer " + wanjikuToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pin\":\"1234\"}"))
+                .andExpect(status().isNotFound());
+
+        assertThat(balanceOf("1000007777")).isEqualByComparingTo("1000");
+        assertThat(balanceOf("1000004821")).isEqualByComparingTo("1000");
+        assertThat(pendingActionRepository.findById(theirs.getId()).orElseThrow().getStatus())
+                .isEqualTo(PendingActionStatus.PENDING);
+    }
+
+    @Test
+    void aTransferCannotBeConfirmedWithoutAPin() throws Exception {
+        PendingAction own = pendingActionRepository.save(new PendingAction(wanjiku.getId(), null, "1000004821",
+                "1000007777", new BigDecimal("500"), "Send KES 500.00 from ...4821 to ...7777", Instant.now().plusSeconds(300)));
+
+        mockMvc.perform(post("/api/v1/assistant/actions/" + own.getId() + "/confirm")
+                        .header("Authorization", "Bearer " + wanjikuToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Enter your PIN to confirm this transfer"));
+
+        assertThat(balanceOf("1000004821")).isEqualByComparingTo("1000");
+        assertThat(pendingActionRepository.findById(own.getId()).orElseThrow().getStatus())
+                .isEqualTo(PendingActionStatus.PENDING);
+    }
+
+    @Test
     void confirmingAfterExpiryFails() throws Exception {
         PendingAction old = pendingActionRepository.save(freezeRequest(wanjiku, "1000004821", Instant.now().minusSeconds(1)));
 
@@ -311,6 +344,15 @@ class AssistantSecurityTest {
     // =========================================================================
     // HELPERS
     // =========================================================================
+
+    private BigDecimal balanceOf(String accountNumber) {
+        entityManager.flush();
+        entityManager.clear();
+        return entityManager
+                .createQuery("select a.balance from Account a where a.accountNumber = :n", BigDecimal.class)
+                .setParameter("n", accountNumber)
+                .getSingleResult();
+    }
 
     private Account account(String number, User owner) {
         return accountRepository.save(new Account(number, new BigDecimal("1000"), AccountStatus.ACTIVE,

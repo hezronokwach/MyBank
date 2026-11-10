@@ -2,6 +2,7 @@ package com.example.mybank.assistant.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -31,12 +32,20 @@ public class PendingAction {
     @Column(nullable = false, length = 20)
     private PendingActionType type;
 
-    // The full account number the action is for (never shown to the model)
+    // The full account number the action is for; for a TRANSFER, the account the money comes from.
+    // Never shown to the model.
     @Column(name = "account_number", nullable = false)
     private String accountNumber;
 
     @Column(length = 200)
     private String reason;
+
+    // Only for TRANSFER: where the money goes and how much. The PIN is never stored here.
+    @Column(name = "to_account_number")
+    private String toAccountNumber;
+
+    @Column(precision = 19, scale = 4)
+    private BigDecimal amount;
 
     // What the confirm card shows, such as "Freeze account ...4821"
     @Column(nullable = false, length = 200)
@@ -79,6 +88,14 @@ public class PendingAction {
         this.expiresAt = expiresAt;
     }
 
+    // For a TRANSFER: the account the money comes from, where it goes and how much
+    public PendingAction(UUID userId, UUID conversationId, String fromAccountNumber, String toAccountNumber,
+                         BigDecimal amount, String summary, Instant expiresAt) {
+        this(userId, conversationId, PendingActionType.TRANSFER, fromAccountNumber, null, summary, expiresAt);
+        this.toAccountNumber = toAccountNumber;
+        this.amount = amount;
+    }
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();
@@ -106,6 +123,14 @@ public class PendingAction {
 
     public String getReason() {
         return reason;
+    }
+
+    public String getToAccountNumber() {
+        return toAccountNumber;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
     }
 
     public String getSummary() {

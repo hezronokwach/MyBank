@@ -23,6 +23,9 @@ import com.example.mybank.enums.TransactionStatus;
 import com.example.mybank.enums.TransactionType;
 import com.example.mybank.enums.UserRole;
 import com.example.mybank.mappers.AccountMapper;
+import com.example.mybank.mappers.TransactionMapper;
+import com.example.mybank.services.impl.TransferServiceImpl;
+import com.example.mybank.util.ReferenceGenerator;
 import com.example.mybank.services.impl.AccountServiceImpl;
 import com.example.mybank.services.impl.TransactionQueryServiceImpl;
 import com.example.mybank.util.AccountNumberGenerator;
@@ -60,6 +63,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         AssistantToolsFactory.class, PendingActionService.class, AccountResolver.class, AccountServiceImpl.class,
         TransactionQueryServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
         AssistantMetrics.class, TestMetricsConfig.class,
+        TransferServiceImpl.class, TransactionMapper.class, ReferenceGenerator.class,
         AssistantToolsTest.Beans.class
 })
 class AssistantToolsTest {

@@ -14,8 +14,13 @@ import com.example.mybank.enums.UserRole;
 import com.example.mybank.exceptions.PendingActionConflictException;
 import com.example.mybank.exceptions.PendingActionNotFoundException;
 import com.example.mybank.mappers.AccountMapper;
+import com.example.mybank.mappers.TransactionMapper;
+import com.example.mybank.services.impl.TransferServiceImpl;
+import com.example.mybank.util.ReferenceGenerator;
 import com.example.mybank.services.impl.AccountServiceImpl;
 import com.example.mybank.util.AccountNumberGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Import({
         PendingActionService.class, AccountServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
         AssistantMetrics.class, TestMetricsConfig.class,
+        TransferServiceImpl.class, TransactionMapper.class, ReferenceGenerator.class,
         PendingActionServiceTest.Beans.class
 })
 class PendingActionServiceTest {
@@ -52,6 +58,11 @@ class PendingActionServiceTest {
         @Bean
         PasswordEncoder passwordEncoder() {
             return new BCryptPasswordEncoder(4);
+        }
+
+        @Bean
+        ObjectMapper objectMapper() {
+            return JsonMapper.builder().findAndAddModules().build();
         }
     }
 
