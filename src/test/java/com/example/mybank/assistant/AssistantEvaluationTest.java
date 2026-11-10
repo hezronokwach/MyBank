@@ -7,15 +7,18 @@ import com.example.mybank.assistant.entity.MessageOutcome;
 import com.example.mybank.assistant.repository.AssistantToolCallRepository;
 import com.example.mybank.assistant.repository.ConversationMessageRepository;
 import com.example.mybank.entity.Account;
+import com.example.mybank.entity.Card;
 import com.example.mybank.entity.Transaction;
 import com.example.mybank.entity.User;
 import com.example.mybank.enums.AccountStatus;
 import com.example.mybank.enums.AccountTier;
 import com.example.mybank.enums.AccountType;
+import com.example.mybank.enums.CardStatus;
 import com.example.mybank.enums.TransactionStatus;
 import com.example.mybank.enums.TransactionType;
 import com.example.mybank.enums.UserRole;
 import com.example.mybank.repository.AccountRepository;
+import com.example.mybank.repository.CardRepository;
 import com.example.mybank.repository.TransactionRepository;
 import com.example.mybank.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -88,6 +91,9 @@ class AssistantEvaluationTest {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    @Autowired
+    private CardRepository cardRepository;
 
     @Autowired
     private ConversationMessageRepository messageRepository;
@@ -375,6 +381,15 @@ class AssistantEvaluationTest {
         saveTransaction("WDR1000002", current, null, "700", TransactionType.WITHDRAWAL);
         saveTransaction("TRN1000003", current, savings, "1000", TransactionType.TRANSFER);
         saveTransaction("DEP1000004", null, savings, "12000", TransactionType.DEPOSIT);
+
+        // Her virtual card: issued, KES 750 on it, ending 0123 (the full number is never given to the assistant)
+        Card card = new Card(wanjiku, current, "KES", new BigDecimal("300"));
+        card.setStatus(CardStatus.ACTIVE);
+        card.setBalance(new BigDecimal("750"));
+        card.setLast4("0123");
+        card.setExpiryMonth(11);
+        card.setExpiryYear(2029);
+        cardRepository.save(card);
 
         return wanjiku;
     }
