@@ -14,17 +14,20 @@ import com.example.mybank.assistant.tools.AssistantTools.AccountView;
 import com.example.mybank.assistant.tools.AssistantTools.ToolResult;
 import com.example.mybank.assistant.tools.AssistantTools.TransactionView;
 import com.example.mybank.entity.Account;
+import com.example.mybank.entity.Card;
 import com.example.mybank.entity.Transaction;
 import com.example.mybank.entity.User;
 import com.example.mybank.enums.AccountStatus;
 import com.example.mybank.enums.AccountTier;
 import com.example.mybank.enums.AccountType;
+import com.example.mybank.enums.CardStatus;
 import com.example.mybank.enums.TransactionDirection;
 import com.example.mybank.enums.TransactionStatus;
 import com.example.mybank.enums.TransactionType;
 import com.example.mybank.enums.UserRole;
 import com.example.mybank.mappers.AccountMapper;
 import com.example.mybank.mappers.TransactionMapper;
+import com.example.mybank.services.impl.CardServiceImpl;
 import com.example.mybank.services.impl.TransferServiceImpl;
 import com.example.mybank.util.ReferenceGenerator;
 import com.example.mybank.services.impl.AccountServiceImpl;
@@ -64,7 +67,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         AssistantToolsFactory.class, PendingActionService.class, AccountResolver.class, AccountServiceImpl.class,
         TransactionQueryServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
         AssistantMetrics.class, TestMetricsConfig.class,
-        TransferServiceImpl.class, TransactionMapper.class, ReferenceGenerator.class,
+        TransferServiceImpl.class, TransactionMapper.class, ReferenceGenerator.class, CardServiceImpl.class,
         AssistantToolsTest.Beans.class
 })
 class AssistantToolsTest {
@@ -375,6 +378,43 @@ class AssistantToolsTest {
 
         assertThat(result.status()).isEqualTo(ToolOutcome.OK);
         assertThat(tools.createdPendingActions().get(0).summary()).isEqualTo("Send KES 250.00 from ...9310 to ...7777");
+    }
+
+    // ---- getMyCard (issue #47): read-only, never the full number or CVV
+
+    @Test
+    void getMyCardSaysWhenThereIsNoCard() {
+        ToolResult result = tools.getMyCard();
+
+        assertThat(result.status()).isEqualTo(ToolOutcome.NOT_FOUND);
+        assertThat(result.message()).isEqualTo("The customer has no card. They can apply on the Card page in the app.");
+    }
+
+    @Test
+    void getMyCardShowsOnlyTheSafeParts() throws Exception {
+        Card card = new Card(wanjiku, wanjikuCurrent, "KES", new BigDecimal("300"));
+        card.setStatus(CardStatus.ACTIVE);
+        card.setBalance(new BigDecimal("750.0000"));
+        card.setLast4("0123");
+        card.setExpiryMonth(11);
+        card.setExpiryYear(2029);
+        card.setCardNumberEncrypted("encrypted-number-text");
+        card.setCvvEncrypted("encrypted-cvv-text");
+        em.persist(card);
+        em.flush();
+
+        ToolResult result = tools.getMyCard();
+
+        assertThat(result.status()).isEqualTo(ToolOutcome.OK);
+        AssistantTools.CardView view = (AssistantTools.CardView) result.data();
+        assertThat(view.status()).isEqualTo("ACTIVE");
+        assertThat(view.card()).isEqualTo("...0123");
+        assertThat(view.balance()).isEqualByComparingTo("750");
+        assertThat(view.balance().scale()).isEqualTo(2);
+        assertThat(view.expires()).isEqualTo("11/2029");
+
+        String json = objectMapper.writeValueAsString(result);
+        assertThat(json).doesNotContain("encrypted").doesNotContain("cvv").doesNotContain("cardNumber");
     }
 
     // How many times a tool was called with this outcome, or 0 if never

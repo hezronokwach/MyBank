@@ -17,6 +17,7 @@ import com.example.mybank.enums.UserRole;
 import com.example.mybank.exceptions.ConversationNotFoundException;
 import com.example.mybank.mappers.AccountMapper;
 import com.example.mybank.mappers.TransactionMapper;
+import com.example.mybank.services.impl.CardServiceImpl;
 import com.example.mybank.services.impl.TransferServiceImpl;
 import com.example.mybank.util.ReferenceGenerator;
 import com.example.mybank.services.impl.AccountServiceImpl;
@@ -69,7 +70,7 @@ import static org.mockito.Mockito.when;
         AssistantToolsFactory.class, PendingActionService.class, AccountResolver.class, AccountServiceImpl.class,
         TransactionQueryServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
         AssistantMetrics.class, TestMetricsConfig.class,
-        TransferServiceImpl.class, TransactionMapper.class, ReferenceGenerator.class,
+        TransferServiceImpl.class, TransactionMapper.class, ReferenceGenerator.class, CardServiceImpl.class,
         AssistantServiceTest.Beans.class
 })
 class AssistantServiceTest {
@@ -151,7 +152,7 @@ class AssistantServiceTest {
         ConversationMessage saveAnswer = saved.get(1);
         assertThat(saveAnswer.getId()).isEqualTo(answer.messageId());
         assertThat(saveAnswer.getRole()).isEqualTo(MessageRole.ASSISTANT);
-        assertThat(saveAnswer.getPromptVersion()).isEqualTo("v3");
+        assertThat(saveAnswer.getPromptVersion()).isEqualTo("v4");
         assertThat(saveAnswer.getModel()).isEqualTo("test-model");
         assertThat(saveAnswer.getInputTokens()).isEqualTo(300);
         assertThat(saveAnswer.getOutputTokens()).isEqualTo(25);

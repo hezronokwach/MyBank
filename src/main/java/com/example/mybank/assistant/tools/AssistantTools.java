@@ -16,7 +16,9 @@ import com.example.mybank.enums.TransactionStatus;
 import com.example.mybank.enums.TransactionType;
 import com.example.mybank.exceptions.AccountNotFoundException;
 import com.example.mybank.exceptions.TransactionNotFoundException;
+import com.example.mybank.dto.responses.CardResponse;
 import com.example.mybank.services.AccountService;
+import com.example.mybank.services.CardService;
 import com.example.mybank.services.TransactionQueryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -64,6 +66,9 @@ public class AssistantTools {
     public record AccountView(String account, AccountType type, String currency, BigDecimal balance,
                               AccountStatus status, String openedAt) {}
 
+    // The customer's card as the model sees it: never the full number or the CVV
+    public record CardView(String status, String card, BigDecimal balance, String currency, String expires) {}
+
     // A transaction as the model sees it
     public record TransactionView(String date, TransactionType type, BigDecimal amount, String currency,
                                   TransactionDirection direction, String counterparty, String reference,
@@ -79,6 +84,7 @@ public class AssistantTools {
     private final ObjectMapper objectMapper;
     private final PendingActionService pendingActionService;
     private final AssistantMetrics metrics;
+    private final CardService cardService;
 
     private int callCount = 0;
     private final List<UUID> recordedCallIds = new ArrayList<>();
@@ -87,7 +93,8 @@ public class AssistantTools {
     AssistantTools(String email, UUID userId, UUID conversationId, AccountService accountService,
                    TransactionQueryService transactionQueryService, AccountResolver accountResolver,
                    AssistantToolCallRepository toolCallRepository, ObjectMapper objectMapper,
-                   PendingActionService pendingActionService, AssistantMetrics metrics) {
+                   PendingActionService pendingActionService, AssistantMetrics metrics,
+                   CardService cardService) {
         this.email = email;
         this.userId = userId;
         this.conversationId = conversationId;
@@ -98,6 +105,7 @@ public class AssistantTools {
         this.objectMapper = objectMapper;
         this.pendingActionService = pendingActionService;
         this.metrics = metrics;
+        this.cardService = cardService;
     }
 
     // =========================================================================
@@ -399,6 +407,48 @@ public class AssistantTools {
             }
         }
         return true;
+    }
+
+    @Tool(description = "Returns the customer's MyBank virtual card: its status (waiting for approval, active, "
+            + "rejected or frozen), its last 4 digits, its balance and its expiry. It never returns the full card "
+            + "number or the CVV. Applying for a card, moving money onto or off it, and showing its full details "
+            + "are only done on the Card page in the app, so point the customer there for those.")
+    public ToolResult getMyCard() {
+        long start = System.currentTimeMillis();
+        Map<String, Object> arguments = new LinkedHashMap<>();
+
+        if (isOverCallLimit()) {
+            return finish("getMyCard", arguments, deniedResult(), start);
+        }
+
+        ToolResult result;
+        try {
+            List<CardResponse> cards = cardService.getMyCards(email);
+            if (cards.isEmpty()) {
+                result = new ToolResult(ToolOutcome.NOT_FOUND,
+                        "The customer has no card. They can apply on the Card page in the app.", null);
+            } else {
+                // The newest card is the one that counts
+                CardResponse card = cards.get(0);
+                result = new ToolResult(ToolOutcome.OK, null, toCardView(card));
+            }
+        } catch (RuntimeException e) {
+            result = errorResult("getMyCard", e);
+        }
+
+        return finish("getMyCard", arguments, result, start);
+    }
+
+    private CardView toCardView(CardResponse card) {
+        String last4 = null;
+        if (card.last4() != null) {
+            last4 = "..." + card.last4();
+        }
+        String expires = null;
+        if (card.expiryMonth() != null && card.expiryYear() != null) {
+            expires = card.expiryMonth() + "/" + card.expiryYear();
+        }
+        return new CardView(card.status().name(), last4, toMoney(card.balance()), card.currency(), expires);
     }
 
     /**

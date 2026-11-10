@@ -7,6 +7,7 @@ import com.example.mybank.entity.User;
 import com.example.mybank.exceptions.UserNotFoundException;
 import com.example.mybank.repository.UserRepository;
 import com.example.mybank.services.AccountService;
+import com.example.mybank.services.CardService;
 import com.example.mybank.services.TransactionQueryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -27,11 +28,13 @@ public class AssistantToolsFactory {
     private final ObjectMapper objectMapper;
     private final PendingActionService pendingActionService;
     private final AssistantMetrics metrics;
+    private final CardService cardService;
 
     public AssistantToolsFactory(UserRepository userRepository, AccountService accountService,
                                  TransactionQueryService transactionQueryService, AccountResolver accountResolver,
                                  AssistantToolCallRepository toolCallRepository, ObjectMapper objectMapper,
-                                 PendingActionService pendingActionService, AssistantMetrics metrics) {
+                                 PendingActionService pendingActionService, AssistantMetrics metrics,
+                                 CardService cardService) {
         this.userRepository = userRepository;
         this.accountService = accountService;
         this.transactionQueryService = transactionQueryService;
@@ -40,6 +43,7 @@ public class AssistantToolsFactory {
         this.objectMapper = objectMapper;
         this.pendingActionService = pendingActionService;
         this.metrics = metrics;
+        this.cardService = cardService;
     }
 
     // Tools for one answer in a conversation; pending actions are linked to that conversation
@@ -47,7 +51,8 @@ public class AssistantToolsFactory {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User email not found: " + email));
         return new AssistantTools(email, user.getId(), conversationId, accountService, transactionQueryService,
-                accountResolver, toolCallRepository, objectMapper, pendingActionService, metrics);
+                accountResolver, toolCallRepository, objectMapper, pendingActionService, metrics,
+                cardService);
     }
 
     // Tools with no conversation, used by tests

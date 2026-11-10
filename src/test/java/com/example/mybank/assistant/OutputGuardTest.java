@@ -10,6 +10,25 @@ class OutputGuardTest {
     private final OutputGuard guard = new OutputGuard();
 
     @Test
+    void masksA16DigitCardNumber() {
+        // Card numbers are 16 digits, so the account number rule already hides them
+        assertThat(guard.clean("Your card is 9991234567890123."))
+                .isEqualTo("Your card is ...0123.");
+    }
+
+    @Test
+    void masksACvv() {
+        assertThat(guard.clean("The CVV is 042.")).isEqualTo("The CVV is ***.");
+        assertThat(guard.clean("cvv: 917")).isEqualTo("cvv: ***");
+        assertThat(guard.clean("Your CVC 305 is secret")).isEqualTo("Your CVC *** is secret");
+    }
+
+    @Test
+    void leavesOtherThreeDigitNumbersAlone() {
+        assertThat(guard.clean("You sent KES 500 on 3 Nov.")).isEqualTo("You sent KES 500 on 3 Nov.");
+    }
+
+    @Test
     void masksAFullAccountNumber() {
         assertThat(guard.clean("Your current account 1000004821 has KES 3,300.00."))
                 .isEqualTo("Your current account ...4821 has KES 3,300.00.");
