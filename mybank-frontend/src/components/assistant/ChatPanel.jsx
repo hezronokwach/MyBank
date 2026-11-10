@@ -85,10 +85,15 @@ const ChatPanel = ({ onAccountsChanged }) => {
         }
     };
 
-    const handleConfirm = async (actionId) => {
+    // pin is only given for a transfer card; a freeze sends no body
+    const handleConfirm = async (actionId, pin) => {
         setBusyActionId(actionId);
         try {
-            const response = await api.post(`/assistant/actions/${actionId}/confirm`);
+            let body = null;
+            if (pin) {
+                body = { pin: pin };
+            }
+            const response = await api.post(`/assistant/actions/${actionId}/confirm`, body);
             const action = response.data;
             setMessages((current) => replaceAction(current, action));
             if (action.status === 'CONFIRMED') {
