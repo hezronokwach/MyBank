@@ -152,7 +152,7 @@ class AssistantServiceTest {
         ConversationMessage saveAnswer = saved.get(1);
         assertThat(saveAnswer.getId()).isEqualTo(answer.messageId());
         assertThat(saveAnswer.getRole()).isEqualTo(MessageRole.ASSISTANT);
-        assertThat(saveAnswer.getPromptVersion()).isEqualTo("v3");
+        assertThat(saveAnswer.getPromptVersion()).isEqualTo("v4");
         assertThat(saveAnswer.getModel()).isEqualTo("test-model");
         assertThat(saveAnswer.getInputTokens()).isEqualTo(300);
         assertThat(saveAnswer.getOutputTokens()).isEqualTo(25);

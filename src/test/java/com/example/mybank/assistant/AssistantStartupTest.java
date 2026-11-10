@@ -38,10 +38,12 @@ class AssistantStartupTest {
 
     @Test
     void loadsVersionedSystemPrompt() {
-        assertThat(prompt.version()).isEqualTo("v3");
+        assertThat(prompt.version()).isEqualTo("v4");
         assertThat(prompt.text())
                 .contains("Use only the tools")
                 .contains("types their PIN only on the confirm card, never in the chat")
+                .contains("Never ask for, show or repeat a card number or CVV")
+                .doesNotContain("MyBank has no cards")
                 .contains("start your reply by telling them never to share their PIN")
                 .contains("last 4 digits")
                 .contains("the whole reply must be in Swahili");
