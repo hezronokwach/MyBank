@@ -8,7 +8,7 @@ const TransferOwnershipPage = () => {
     const { accountNumber } = location.state || {};
     
     return (
-        <Layout><div className="form-page"><Link to="/dashboard" className="back-link">← Back to dashboard</Link><TransferOwnershipForm accountNumber={accountNumber} /></div></Layout>
+        <Layout access="customer"><div className="form-page"><Link to="/dashboard" className="back-link">← Back to dashboard</Link><TransferOwnershipForm accountNumber={accountNumber} /></div></Layout>
     );
 };
 

@@ -144,7 +144,7 @@ const AdminDashboard = () => {
     }
 
     return (
-        <Layout>
+        <Layout access="admin">
             <header className="page-header">
                 <div>
                     <p className="eyebrow">Admin</p>
