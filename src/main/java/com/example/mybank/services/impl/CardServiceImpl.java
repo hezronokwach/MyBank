@@ -1,5 +1,6 @@
 package com.example.mybank.services.impl;
 
+import com.example.mybank.dto.responses.CardFeeResponse;
 import com.example.mybank.dto.responses.CardResponse;
 import com.example.mybank.entity.Account;
 import com.example.mybank.entity.Card;
@@ -146,6 +147,12 @@ public class CardServiceImpl implements CardService {
             cards.add(toResponse(card));
         }
         return cards;
+    }
+
+    // GET /api/v1/cards/fee
+    @Override
+    public CardFeeResponse getIssueFee() {
+        return new CardFeeResponse(toMoney(issueFee), CARD_CURRENCY);
     }
 
     private CardResponse toResponse(Card card) {

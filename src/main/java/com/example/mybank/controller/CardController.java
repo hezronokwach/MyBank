@@ -5,6 +5,7 @@ import com.example.mybank.dto.requests.CardDetailsRequest;
 import com.example.mybank.dto.requests.CardTopUpRequest;
 import com.example.mybank.dto.requests.CardWithdrawRequest;
 import com.example.mybank.dto.responses.CardDetailsResponse;
+import com.example.mybank.dto.responses.CardFeeResponse;
 import com.example.mybank.dto.responses.CardMoveResponse;
 import com.example.mybank.dto.responses.CardResponse;
 import com.example.mybank.dto.responses.CardTransactionResponse;
@@ -57,6 +58,16 @@ public class CardController {
         String userEmail = authentication.getName();
         CardResponse card = cardService.applyForCard(userEmail, request.accountNumber(), request.pin());
         return ResponseEntity.status(HttpStatus.CREATED).body(card);
+    }
+
+    /**
+     * GET /api/v1/cards/fee
+     * What a new card costs (from app.cards.issue-fee), shown before the customer applies.
+     */
+    @GetMapping("/fee")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<CardFeeResponse> getIssueFee() {
+        return ResponseEntity.ok(cardService.getIssueFee());
     }
 
     /**

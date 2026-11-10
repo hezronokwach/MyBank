@@ -3,6 +3,44 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import Layout from '../components/Layout';
 import ChatPanel from '../components/assistant/ChatPanel';
+import { formatMoney } from '../components/card/cardHelpers';
+
+// "Your card" on the dashboard: a short summary that opens the card page
+function CardSummary({ card, onOpen }) {
+    let title = 'Get a virtual card';
+    let text = 'A card with its own balance. Move money onto it and back whenever you like.';
+    let button = 'Get a card';
+    let amount = null;
+
+    if (card !== null && card.status === 'PENDING_APPROVAL') {
+        title = 'Card waiting for approval';
+        text = 'An admin will check your application soon.';
+        button = 'View';
+    } else if (card !== null && (card.status === 'ACTIVE' || card.status === 'FROZEN')) {
+        title = 'Card •••• ' + card.last4;
+        text = 'Card balance';
+        if (card.status === 'FROZEN') {
+            text = 'Frozen';
+        }
+        button = 'Open card';
+        amount = formatMoney(card.balance, card.currency);
+    } else if (card !== null && card.status === 'REJECTED') {
+        title = 'Card not approved';
+        text = 'The fee was refunded. You can apply again.';
+        button = 'Apply again';
+    }
+
+    return (
+        <section className="card card-summary">
+            <span className="card-summary__icon" aria-hidden="true">▭</span>
+            <div className="card-summary__text">
+                <h2>{title}</h2>
+                <p>{text}{amount && <strong> {amount}</strong>}</p>
+            </div>
+            <button type="button" className="button button--secondary button--small" onClick={onOpen}>{button}</button>
+        </section>
+    );
+}
 
 const Dashboard = () => {
     const [accounts, setAccounts] = useState([]);
@@ -13,10 +51,24 @@ const Dashboard = () => {
     const [isBalanceHidden, setIsBalanceHidden] = useState(() => localStorage.getItem('hideBalance') === 'true');
     const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
     const [firstName, setFirstName] = useState('');
+    const [cards, setCards] = useState([]);
     // Goes up by one whenever the accounts should be loaded again (for example after the assistant froze one)
     const [accountsVersion, setAccountsVersion] = useState(0);
     const navigate = useNavigate();
 
+
+    // The customer's card, for the "Your card" section
+    useEffect(() => {
+        const fetchCards = async () => {
+            try {
+                const response = await api.get('/cards/me');
+                setCards(response.data);
+            } catch (error) {
+                console.error('Failed to fetch your card', error);
+            }
+        };
+        fetchCards();
+    }, []);
 
     // The customer's first name, for the greeting
     useEffect(() => {
@@ -102,6 +154,12 @@ const Dashboard = () => {
         });
     };
 
+    // The newest card is the one the summary shows
+    let latestCard = null;
+    if (cards.length > 0) {
+        latestCard = cards[0];
+    }
+
     let greeting = 'Good to see you.';
     if (firstName) {
         greeting = 'Good to see you, ' + firstName + '.';
@@ -157,6 +215,8 @@ const Dashboard = () => {
                                 ))}
                             </div> : <div className="activity-empty"><span>⌁</span><p>No transactions yet</p><small>Your deposits, withdrawals, and transfers will appear here.</small></div>}
                         </section>
+                        <CardSummary card={latestCard} onOpen={() => navigate('/card')} />
+
                         <section className="card manage-card">
                             <div className="section-heading"><div><h2>Manage this account</h2><p>Account •••{account.accountNumber.slice(-4)}</p></div></div>
                             <div className="manage-options">
