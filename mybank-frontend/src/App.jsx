@@ -5,6 +5,7 @@ import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminStatsPage from './pages/AdminStatsPage';
+import AdminCardsPage from './pages/AdminCardsPage';
 import TransferPage from './pages/TransferPage';
 import DepositPage from './pages/DepositPage';
 import WithdrawPage from './pages/WithdrawPage';
@@ -23,6 +24,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/cards" element={<AdminCardsPage />} />
         <Route path="/admin/stats" element={<AdminStatsPage />} />
         <Route path="/transfer" element={<TransferPage />} />
         <Route path="/deposit" element={<DepositPage />} />

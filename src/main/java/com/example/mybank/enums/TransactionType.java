@@ -5,5 +5,7 @@ public enum TransactionType {
     DEPOSIT,
     WITHDRAWAL,
     // The fee taken from an account when the customer applies for a virtual card
-    CARD_FEE
+    CARD_FEE,
+    // The card fee given back when an admin rejects the card
+    CARD_FEE_REFUND
 }
