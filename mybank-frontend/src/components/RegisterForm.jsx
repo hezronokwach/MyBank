@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../api/axiosInstance';
 import { useNotification } from './notificationContext';
+import ResendEmailButton from './ResendEmailButton';
 
 const RegisterForm = () => {
     const [email, setEmail] = useState('');
@@ -10,7 +11,8 @@ const RegisterForm = () => {
     const [lastName, setLastName] = useState('');
     const [pin, setPin] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const navigate = useNavigate();
+    // The email we sent the confirmation link to, once sign-up worked
+    const [sentTo, setSentTo] = useState('');
     const { notify } = useNotification();
 
     const handleSubmit = async (e) => {
@@ -18,11 +20,12 @@ const RegisterForm = () => {
         setIsSubmitting(true);
         try {
             await api.post('/auth/register', { email, password, firstName, lastName, pin });
-            notify('Account created. Sign in to continue.');
-            navigate('/login');
+            setSentTo(email);
         } catch (error) {
             if (error.response && error.response.status === 409) {
                 notify('An account with this email already exists.', 'error');
+            } else if (error.response && error.response.data && error.response.data.message) {
+                notify(error.response.data.message, 'error');
             } else {
                 notify('We could not create your account. Please try again.', 'error');
             }
@@ -30,6 +33,23 @@ const RegisterForm = () => {
             setIsSubmitting(false);
         }
     };
+
+    if (sentTo !== '') {
+        return (
+            <div className="auth-form">
+                <div className="auth-icon auth-icon--success" aria-hidden="true">✉</div>
+                <p className="eyebrow">Almost there</p>
+                <h1>Check your email</h1>
+                <p className="form-intro">
+                    We sent a link to <strong>{sentTo}</strong>. Open it to confirm your email, then sign in.
+                    The link expires in 24 hours.
+                </p>
+                <p className="form-intro">Nothing there? Check your spam folder, or send a new link.</p>
+                <ResendEmailButton email={sentTo} />
+                <p className="form-switch">Already confirmed? <Link to="/login">Sign in</Link></p>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleSubmit} className="auth-form">

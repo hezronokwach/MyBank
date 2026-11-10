@@ -23,6 +23,7 @@ public class DataLoader {
                         "System",
                         UserRole.ROLE_ADMIN
                 );
+                admin.setEmailVerified(true);
                 userRepository.save(admin);
             }
         };
