@@ -3,11 +3,12 @@ package com.example.mybank.services;
 import com.example.mybank.dto.requests.LoginRequest;
 import com.example.mybank.dto.requests.RegisterRequest;
 import com.example.mybank.dto.responses.AuthResponse;
+import com.example.mybank.dto.responses.RegisterResponse;
 import com.example.mybank.dto.responses.UserResponse;
 
 
 public interface UserService {
-    AuthResponse registerUser(RegisterRequest registerRequest);
+    RegisterResponse registerUser(RegisterRequest registerRequest);
     AuthResponse loginUser(LoginRequest loginRequest);
     String getUserRoleByEmail(String email);
     UserResponse getUserByEmail(String email);

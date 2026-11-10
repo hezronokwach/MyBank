@@ -31,6 +31,12 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role = UserRole.ROLE_USER;
+
+    // Has the user clicked the link in the confirmation email?
+    // Boolean, not boolean: users created before this column existed have no value, and they count as confirmed.
+    // New sign-ups start with false.
+    @Column(name = "email_verified")
+    private Boolean emailVerified;
     
     // 1. CONSTRUCTORS
 
@@ -92,6 +98,18 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    // No value (an older user) counts as confirmed
+    public boolean isEmailVerified() {
+        if (emailVerified == null) {
+            return true;
+        }
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 
     public void setPasswordHash(String passwordHash) {

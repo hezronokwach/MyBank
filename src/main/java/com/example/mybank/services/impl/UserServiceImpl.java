@@ -12,7 +12,10 @@ import com.example.mybank.enums.UserRole;
 import com.example.mybank.exceptions.DuplicateResourceException;
 import com.example.mybank.exceptions.UnauthorizedException;
 import com.example.mybank.exceptions.UserNotFoundException;
+import com.example.mybank.dto.responses.RegisterResponse;
 import com.example.mybank.dto.responses.UserResponse;
+import com.example.mybank.exceptions.EmailNotVerifiedException;
+import com.example.mybank.services.EmailVerificationService;
 import com.example.mybank.mappers.UserMapper;
 import com.example.mybank.repository.AccountRepository;
 import com.example.mybank.repository.UserRepository;
@@ -40,11 +43,12 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final AccountRepository accountRepository;
     private final AccountNumberGenerator accountNumberGenerator;
+    private final EmailVerificationService emailVerificationService;
 
     @Value("${app.jwt.expiration}")
     private long jwtExpirationMs;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, JwtTokenProvider jwtTokenProvider, AuthenticationManager authenticationManager, AccountRepository accountRepository, AccountNumberGenerator accountNumberGenerator) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, JwtTokenProvider jwtTokenProvider, AuthenticationManager authenticationManager, AccountRepository accountRepository, AccountNumberGenerator accountNumberGenerator, EmailVerificationService emailVerificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
@@ -52,17 +56,20 @@ public class UserServiceImpl implements UserService {
         this.authenticationManager = authenticationManager;
         this.accountRepository = accountRepository;
         this.accountNumberGenerator = accountNumberGenerator;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Override
     @Transactional
-    public AuthResponse registerUser(RegisterRequest registerRequest) {
+    public RegisterResponse registerUser(RegisterRequest registerRequest) {
         if(userRepository.existsByEmail(registerRequest.email())){
             throw new DuplicateResourceException("Email already exists" + registerRequest.email());
         }
         String hashedPassword = passwordEncoder.encode(registerRequest.password());
         String hashedPin = passwordEncoder.encode(registerRequest.pin());
         User userEntity = userMapper.toEntity(registerRequest, hashedPassword);
+        // New users must confirm their email before they can sign in
+        userEntity.setEmailVerified(false);
         User savedUser = userRepository.save(userEntity);
         Account account = new Account (
                 accountNumberGenerator.generate(),
@@ -74,10 +81,14 @@ public class UserServiceImpl implements UserService {
                 savedUser,
                 hashedPin
         );
-        Account savedAccount = accountRepository.save(account);
+        accountRepository.save(account);
 
-        String token = jwtTokenProvider.generateToken(savedUser);
-        return userMapper.toAuthResponse(token,jwtExpirationMs, savedUser, savedAccount);
+        // Send the confirmation link. If the email can't be sent, this throws and nothing above is saved,
+        // so the user can simply try again.
+        emailVerificationService.sendVerification(savedUser);
+
+        return new RegisterResponse(savedUser.getEmail(),
+                "We sent a link to " + savedUser.getEmail() + ". Open it to confirm your email, then sign in.");
     }
 
     @Override
@@ -94,6 +105,11 @@ public class UserServiceImpl implements UserService {
 
       User user = userRepository.findByEmail(loginRequest.email())
                 .orElseThrow(()-> (new UserNotFoundException("User email not found" + loginRequest.email())));
+
+      // Checked after the password, so this answer never tells a stranger whether an email is registered
+      if (!user.isEmailVerified()) {
+          throw new EmailNotVerifiedException("Confirm your email first. Check your inbox for the link.");
+      }
       Account account = null;
       if (user.getRole() != UserRole.ROLE_ADMIN) {
           List<Account> accounts = accountRepository.findByUserId(user.getId());
