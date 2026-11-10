@@ -25,6 +25,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             """)
     List<Transaction> findRecentForAccount(@Param("accountId") UUID accountId, Pageable pageable);
 
+    // The money moved onto and off one card, newest first
+    @Query("""
+            select t from Transaction t
+            left join fetch t.fromAccount
+            left join fetch t.toAccount
+            where t.card.id = :cardId
+            order by t.createdAt desc
+            """)
+    List<Transaction> findRecentForCard(@Param("cardId") UUID cardId, Pageable pageable);
+
     @Query("""
             select t from Transaction t
             left join fetch t.fromAccount

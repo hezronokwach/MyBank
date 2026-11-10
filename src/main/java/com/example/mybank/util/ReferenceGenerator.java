@@ -47,6 +47,20 @@ public class ReferenceGenerator {
         return prefix + number;
     }
 
+    // Money moved onto a card: CTU followed by 7 random digits
+    public String generateCardTopUp() {
+        String prefix = "CTU";
+        int number = random.nextInt(9000000) + 1000000;
+        return prefix + number;
+    }
+
+    // Money moved off a card: CWD followed by 7 random digits
+    public String generateCardWithdrawal() {
+        String prefix = "CWD";
+        int number = random.nextInt(9000000) + 1000000;
+        return prefix + number;
+    }
+
     public String generateTransfer() {
         // Standard bank branch/type prefix (e.g., DEP)
         String prefix = "TRN";
