@@ -6,6 +6,7 @@ import com.example.mybank.assistant.TestMetricsConfig;
 import com.example.mybank.assistant.dto.PendingActionView;
 import com.example.mybank.assistant.entity.AssistantToolCall;
 import com.example.mybank.assistant.entity.PendingActionStatus;
+import com.example.mybank.assistant.entity.PendingActionType;
 import com.example.mybank.assistant.entity.ToolOutcome;
 import com.example.mybank.assistant.repository.AssistantToolCallRepository;
 import com.example.mybank.assistant.repository.PendingActionRepository;
@@ -23,6 +24,9 @@ import com.example.mybank.enums.TransactionStatus;
 import com.example.mybank.enums.TransactionType;
 import com.example.mybank.enums.UserRole;
 import com.example.mybank.mappers.AccountMapper;
+import com.example.mybank.mappers.TransactionMapper;
+import com.example.mybank.services.impl.TransferServiceImpl;
+import com.example.mybank.util.ReferenceGenerator;
 import com.example.mybank.services.impl.AccountServiceImpl;
 import com.example.mybank.services.impl.TransactionQueryServiceImpl;
 import com.example.mybank.util.AccountNumberGenerator;
@@ -60,6 +64,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         AssistantToolsFactory.class, PendingActionService.class, AccountResolver.class, AccountServiceImpl.class,
         TransactionQueryServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
         AssistantMetrics.class, TestMetricsConfig.class,
+        TransferServiceImpl.class, TransactionMapper.class, ReferenceGenerator.class,
         AssistantToolsTest.Beans.class
 })
 class AssistantToolsTest {
@@ -314,6 +319,62 @@ class AssistantToolsTest {
 
         assertThat(result.status()).isEqualTo(ToolOutcome.DENIED);
         assertThat(tools.createdPendingActions()).isEmpty();
+    }
+
+    // ---- requestTransfer (issue #20). Wanjiku: current ...4821 = 1,500, savings ...9310 = 20,000. Otieno: ...7777.
+
+    @Test
+    void requestTransferOnlyCreatesARequest() throws Exception {
+        ToolResult result = tools.requestTransfer("4821", "1000007777", new BigDecimal("500"));
+
+        assertThat(result.status()).isEqualTo(ToolOutcome.OK);
+        assertThat(result.message()).contains("type their PIN on the card").contains("Never ask for the PIN in the chat");
+
+        List<PendingActionView> created = tools.createdPendingActions();
+        assertThat(created).hasSize(1);
+        assertThat(created.get(0).type()).isEqualTo(PendingActionType.TRANSFER);
+        assertThat(created.get(0).summary()).isEqualTo("Send KES 500.00 from ...4821 to ...7777");
+
+        // No money moves until the customer confirms with the PIN
+        em.flush();
+        em.clear();
+        assertThat(em.find(Account.class, wanjikuCurrent.getId()).getBalance()).isEqualByComparingTo("1500");
+        assertThat(em.find(Account.class, otienoCurrent.getId()).getBalance()).isEqualByComparingTo("99999");
+
+        // The model and the audit row only see the last 4 digits of the other account
+        assertThat(objectMapper.writeValueAsString(result)).doesNotContain("1000007777");
+        assertThat(lastCall().getArguments()).doesNotContain("1000007777");
+    }
+
+    @Test
+    void requestTransferCanOnlySendFromYourOwnAccount() {
+        // ...7777 is Otieno's account, so for Wanjiku it doesn't exist
+        ToolResult result = tools.requestTransfer("7777", "1000004821", new BigDecimal("100"));
+
+        assertThat(result.status()).isEqualTo(ToolOutcome.NOT_FOUND);
+        assertThat(pendingActions.count()).isZero();
+    }
+
+    @Test
+    void requestTransferChecksTheAmountAndTheDestination() {
+        assertThat(tools.requestTransfer("4821", "1000007777", new BigDecimal("0")).status()).isEqualTo(ToolOutcome.DENIED);
+        assertThat(tools.requestTransfer("4821", "1000007777", new BigDecimal("-50")).status()).isEqualTo(ToolOutcome.DENIED);
+        assertThat(tools.requestTransfer("4821", "7777", new BigDecimal("100")).status()).isEqualTo(ToolOutcome.DENIED);
+        assertThat(tools.requestTransfer("4821", "1000004821", new BigDecimal("100")).status()).isEqualTo(ToolOutcome.DENIED);
+        // More than the 1,500 in the account
+        ToolResult tooMuch = factory.forUser(WANJIKU).requestTransfer("4821", "1000007777", new BigDecimal("2000"));
+        assertThat(tooMuch.status()).isEqualTo(ToolOutcome.DENIED);
+        assertThat(tooMuch.message()).isEqualTo("The account doesn't have enough money for this transfer.");
+
+        assertThat(pendingActions.count()).isZero();
+    }
+
+    @Test
+    void requestTransferAcceptsANumberWrittenWithSpaces() {
+        ToolResult result = tools.requestTransfer("9310", "1000 0077 77", new BigDecimal("250"));
+
+        assertThat(result.status()).isEqualTo(ToolOutcome.OK);
+        assertThat(tools.createdPendingActions().get(0).summary()).isEqualTo("Send KES 250.00 from ...9310 to ...7777");
     }
 
     // How many times a tool was called with this outcome, or 0 if never

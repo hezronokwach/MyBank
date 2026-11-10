@@ -2,6 +2,7 @@ package com.example.mybank.assistant;
 
 import com.example.mybank.assistant.dto.ChatAnswer;
 import com.example.mybank.assistant.dto.ChatRequest;
+import com.example.mybank.assistant.dto.ConfirmActionRequest;
 import com.example.mybank.assistant.dto.FeedbackRequest;
 import com.example.mybank.assistant.dto.FeedbackResponse;
 import com.example.mybank.assistant.dto.PendingActionView;
@@ -57,15 +58,21 @@ public class AssistantController {
     /**
      * POST /api/v1/assistant/actions/{actionId}/confirm
      * The customer pressed Confirm on a card. No AI is involved: this runs the prepared action directly.
+     * A transfer card sends {"pin": "..."}; the PIN never goes through the chat or the model.
      */
     @PostMapping("/actions/{actionId}/confirm")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<PendingActionView> confirmAction(
             @PathVariable UUID actionId,
+            @RequestBody(required = false) ConfirmActionRequest request,
             Authentication authentication
     ) {
         String userEmail = authentication.getName();
-        PendingActionView action = pendingActionService.confirm(userEmail, actionId);
+        String pin = null;
+        if (request != null) {
+            pin = request.pin();
+        }
+        PendingActionView action = pendingActionService.confirm(userEmail, actionId, pin);
         return ResponseEntity.ok(action);
     }
 

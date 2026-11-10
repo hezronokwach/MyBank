@@ -10,15 +10,21 @@ import com.example.mybank.entity.User;
 import com.example.mybank.exceptions.BaseException;
 import com.example.mybank.exceptions.PendingActionConflictException;
 import com.example.mybank.exceptions.PendingActionNotFoundException;
+import com.example.mybank.exceptions.PinRequiredException;
+import com.example.mybank.exceptions.UnauthorizedException;
 import com.example.mybank.exceptions.UserNotFoundException;
 import com.example.mybank.repository.UserRepository;
+import com.example.mybank.dto.responses.TransactionResponse;
 import com.example.mybank.services.AccountService;
+import com.example.mybank.services.TransferService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -38,15 +44,18 @@ public class PendingActionService {
     private final PendingActionRepository pendingActionRepository;
     private final UserRepository userRepository;
     private final AccountService accountService;
+    private final TransferService transferService;
     private final AssistantMetrics metrics;
 
     public PendingActionService(PendingActionRepository pendingActionRepository,
                                 UserRepository userRepository,
                                 AccountService accountService,
+                                TransferService transferService,
                                 AssistantMetrics metrics) {
         this.pendingActionRepository = pendingActionRepository;
         this.userRepository = userRepository;
         this.accountService = accountService;
+        this.transferService = transferService;
         this.metrics = metrics;
     }
 
@@ -62,13 +71,36 @@ public class PendingActionService {
         return saved;
     }
 
+    // Called by the requestTransfer tool. It only saves the request; no money moves yet.
+    // The PIN is not asked for here: the customer types it on the confirm card.
+    public PendingAction createTransfer(UUID userId, UUID conversationId, String fromAccountNumber,
+                                        String toAccountNumber, BigDecimal amount, String currency) {
+        String summary = "Send " + currency + " " + amount.setScale(2, RoundingMode.HALF_UP).toPlainString()
+                + " from " + AccountResolver.mask(fromAccountNumber)
+                + " to " + AccountResolver.mask(toAccountNumber);
+        Instant expiresAt = Instant.now().plus(TIME_TO_CONFIRM);
+
+        PendingAction action = new PendingAction(userId, conversationId, fromAccountNumber, toAccountNumber,
+                amount, summary, expiresAt);
+        PendingAction saved = pendingActionRepository.save(action);
+        metrics.recordAction(saved.getType(), saved.getStatus());
+        return saved;
+    }
+
+    // A freeze needs no PIN
+    public PendingActionView confirm(String email, UUID actionId) {
+        return confirm(email, actionId, null);
+    }
+
     /**
      * POST /api/v1/assistant/actions/{id}/confirm
      *
+     * pin is only used for a TRANSFER. It goes straight to the transfer check and is never saved or logged.
+     *
      * No @Transactional on purpose: each save below commits straight away. That way the action is marked
-     * as taken before the freeze runs, and an EXPIRED or FAILED status is kept even though an error follows.
+     * as taken before the money moves, and an EXPIRED or FAILED status is kept even though an error follows.
      */
-    public PendingActionView confirm(String email, UUID actionId) {
+    public PendingActionView confirm(String email, UUID actionId, String pin) {
         // 1. Load the action, only if it belongs to this user
         PendingAction action = loadOwnAction(email, actionId);
 
@@ -86,7 +118,12 @@ public class PendingActionService {
             throw new PendingActionConflictException("This request has expired. Ask the assistant again.");
         }
 
-        // 4. Mark it as confirmed BEFORE doing anything. If two confirms arrive at the same moment,
+        // 4. A transfer needs the PIN. If it's missing nothing changes, so the customer can type it and press Confirm again.
+        if (action.getType() == PendingActionType.TRANSFER && (pin == null || pin.isBlank())) {
+            throw new PinRequiredException("Enter your PIN to confirm this transfer");
+        }
+
+        // 5. Mark it as confirmed BEFORE doing anything. If two confirms arrive at the same moment,
         //    the version column lets only the first save succeed, so the action can't run twice.
         action.setStatus(PendingActionStatus.CONFIRMED);
         action.setDecidedAt(Instant.now());
@@ -96,13 +133,22 @@ public class PendingActionService {
             throw new PendingActionConflictException("This request is already being handled");
         }
 
-        // 5. Do it, through the normal account service with its normal checks
+        // 6. Do it, through the normal services with their normal checks
         try {
             if (action.getType() == PendingActionType.FREEZE_ACCOUNT) {
                 accountService.freezeMyAccount(email, action.getAccountNumber(), action.getReason());
                 action.setResult("Account " + AccountResolver.mask(action.getAccountNumber())
                         + " is frozen. To unfreeze it, contact support.");
+            } else if (action.getType() == PendingActionType.TRANSFER) {
+                // The action's id is the idempotency key: even if this ran twice, the money would move only once
+                TransactionResponse transfer = transferService.transfer(email, action.getAccountNumber(),
+                        action.getToAccountNumber(), action.getAmount(), "assistant-" + action.getId(), pin);
+                action.setResult("Sent. Reference " + transfer.reference() + ".");
             }
+        } catch (UnauthorizedException e) {
+            // Wrong PIN. The card can't be tried again, so nobody can guess the PIN by pressing Confirm over and over.
+            action.setStatus(PendingActionStatus.FAILED);
+            action.setResult("Wrong PIN. Nothing was sent. Ask the assistant again if you still want to send it.");
         } catch (BaseException e) {
             // For example the account was frozen or closed in the meantime
             action.setStatus(PendingActionStatus.FAILED);

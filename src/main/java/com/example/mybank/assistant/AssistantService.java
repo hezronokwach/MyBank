@@ -246,6 +246,8 @@ public class AssistantService {
                 source = "a transaction lookup";
             } else if (toolCall.getToolName().equals("requestFreezeAccount")) {
                 source = "a freeze request";
+            } else if (toolCall.getToolName().equals("requestTransfer")) {
+                source = "a transfer request";
             } else {
                 source = toolCall.getToolName();
             }

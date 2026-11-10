@@ -113,8 +113,8 @@ const AssistantMetricsPanel = () => {
                     <MetricCard label="Hidden by output guard" value={formatNumber(metrics.blockedOutputGuard)} note="Account number, PIN or token removed" />
                 </MetricGroup>
 
-                <MetricGroup title="Confirm cards and feedback">
-                    <MetricCard label="Freeze requests" value={formatNumber(metrics.actionsCreated)}
+                <MetricGroup title="Freezes, transfers and feedback">
+                    <MetricCard label="Confirm cards" value={formatNumber(metrics.actionsCreated)}
                         note={metrics.actionsConfirmed + ' confirmed, ' + metrics.actionsCancelled + ' cancelled, ' + metrics.actionsExpired + ' expired, ' + metrics.actionsFailed + ' failed'} />
                     <MetricCard label="Thumbs up" value={formatNumber(metrics.thumbsUp)} note={ratingNote} />
                     <MetricCard label="Thumbs down" value={formatNumber(metrics.thumbsDown)} />

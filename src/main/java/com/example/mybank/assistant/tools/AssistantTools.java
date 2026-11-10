@@ -304,6 +304,103 @@ public class AssistantTools {
         return finish("requestFreezeAccount", arguments, result, start);
     }
 
+    @Tool(description = "Prepare a transfer from one of the customer's own accounts to another MyBank account. "
+            + "It does NOT send any money: it creates a request that the customer must confirm within 5 minutes "
+            + "by typing their PIN on the card shown below your answer. Tell the customer to type their PIN on "
+            + "that card and press Confirm; never ask for the PIN in the chat, and never say the money was sent.")
+    public ToolResult requestTransfer(
+            @ToolParam(description = "The customer's account the money comes from: its last 4 (or more) digits, or the full number")
+            String fromAccountNumberOrLast4,
+            @ToolParam(description = "The full 10-digit MyBank account number the money goes to, exactly as the customer wrote it")
+            String toAccountNumber,
+            @ToolParam(description = "How much to send, in the account's currency, for example 500")
+            BigDecimal amount) {
+        long start = System.currentTimeMillis();
+        Map<String, Object> arguments = new LinkedHashMap<>();
+        arguments.put("fromAccountNumberOrLast4", fromAccountNumberOrLast4);
+        // Only the last 4 digits of someone else's account go into the audit row
+        arguments.put("toAccountNumber", AccountResolver.mask(toAccountNumber));
+        arguments.put("amount", amount);
+
+        if (isOverCallLimit()) {
+            return finish("requestTransfer", arguments, deniedResult(), start);
+        }
+
+        ToolResult result;
+        try {
+            String destination = removeSpaces(toAccountNumber);
+            AccountResolver.Resolution resolution = accountResolver.resolve(email, fromAccountNumberOrLast4);
+
+            if (amount == null || amount.signum() <= 0) {
+                result = new ToolResult(ToolOutcome.DENIED, "The amount must be more than 0.", null);
+            } else if (!isFullAccountNumber(destination)) {
+                result = new ToolResult(ToolOutcome.DENIED,
+                        "Ask the customer for the full 10-digit account number to send the money to.", null);
+            } else if (resolution.status() != AccountResolver.Status.FOUND) {
+                result = unresolvedResult(resolution);
+            } else {
+                AccountResponse from = resolution.account();
+
+                if (from.status() != AccountStatus.ACTIVE) {
+                    result = new ToolResult(ToolOutcome.DENIED, "This account isn't active, so it can't send money.", null);
+                } else if (from.type() == AccountType.FIXED_01 || from.type() == AccountType.FIXED_02
+                        || from.type() == AccountType.FIXED_03) {
+                    result = new ToolResult(ToolOutcome.DENIED, "Money can't be sent from a fixed deposit account.", null);
+                } else if (from.accountNumber().equals(destination)) {
+                    result = new ToolResult(ToolOutcome.DENIED, "The money can't be sent to the same account.", null);
+                } else if (from.balance().compareTo(amount) <= 0) {
+                    result = new ToolResult(ToolOutcome.DENIED, "The account doesn't have enough money for this transfer.", null);
+                } else {
+                    // Only saves a request; the money moves later, if the customer confirms with their PIN
+                    PendingAction action = pendingActionService.createTransfer(
+                            userId, conversationId, from.accountNumber(), destination, amount, from.currency());
+                    PendingActionView view = pendingActionService.toView(action);
+                    createdPendingActions.add(view);
+
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("summary", view.summary());
+                    data.put("status", "WAITING_FOR_CUSTOMER_TO_CONFIRM");
+                    data.put("expiresInMinutes", 5);
+                    result = new ToolResult(ToolOutcome.OK,
+                            "Nothing is sent yet. Tell the customer to type their PIN on the card below your answer "
+                                    + "and press Confirm. Never ask for the PIN in the chat.", data);
+                }
+            }
+        } catch (RuntimeException e) {
+            result = errorResult("requestTransfer", e);
+        }
+
+        return finish("requestTransfer", arguments, result, start);
+    }
+
+    // "1000 0047 77" becomes "1000004777"
+    private String removeSpaces(String text) {
+        if (text == null) {
+            return "";
+        }
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c != ' ' && c != '-') {
+                result.append(c);
+            }
+        }
+        return result.toString();
+    }
+
+    // MyBank account numbers are exactly 10 digits
+    private boolean isFullAccountNumber(String text) {
+        if (text.length() != 10) {
+            return false;
+        }
+        for (int i = 0; i < text.length(); i++) {
+            if (!Character.isDigit(text.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Pending actions created during this answer, so the chat endpoint can show a confirm card for each.
      */
