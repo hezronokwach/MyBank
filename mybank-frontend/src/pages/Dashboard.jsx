@@ -79,6 +79,8 @@ const Dashboard = () => {
         if (transaction.type === 'WITHDRAWAL') return 'Cash withdrawal';
         if (transaction.type === 'CARD_FEE') return 'Card fee';
         if (transaction.type === 'CARD_FEE_REFUND') return 'Card fee refund';
+        if (transaction.type === 'CARD_TOPUP') return 'Moved to your card';
+        if (transaction.type === 'CARD_WITHDRAWAL') return 'Moved from your card';
         return transaction.direction === 'IN'
             ? `Received from account •••${transaction.counterpartyLast4 || ''}`
             : `Sent to account •••${transaction.counterpartyLast4 || ''}`;
