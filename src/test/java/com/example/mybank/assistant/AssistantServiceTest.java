@@ -17,6 +17,7 @@ import com.example.mybank.enums.UserRole;
 import com.example.mybank.exceptions.ConversationNotFoundException;
 import com.example.mybank.mappers.AccountMapper;
 import com.example.mybank.mappers.TransactionMapper;
+import com.example.mybank.services.impl.CardServiceImpl;
 import com.example.mybank.services.impl.TransferServiceImpl;
 import com.example.mybank.util.ReferenceGenerator;
 import com.example.mybank.services.impl.AccountServiceImpl;
@@ -69,7 +70,7 @@ import static org.mockito.Mockito.when;
         AssistantToolsFactory.class, PendingActionService.class, AccountResolver.class, AccountServiceImpl.class,
         TransactionQueryServiceImpl.class, AccountMapper.class, AccountNumberGenerator.class,
         AssistantMetrics.class, TestMetricsConfig.class,
-        TransferServiceImpl.class, TransactionMapper.class, ReferenceGenerator.class,
+        TransferServiceImpl.class, TransactionMapper.class, ReferenceGenerator.class, CardServiceImpl.class,
         AssistantServiceTest.Beans.class
 })
 class AssistantServiceTest {

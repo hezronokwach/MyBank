@@ -248,6 +248,8 @@ public class AssistantService {
                 source = "a freeze request";
             } else if (toolCall.getToolName().equals("requestTransfer")) {
                 source = "a transfer request";
+            } else if (toolCall.getToolName().equals("getMyCard")) {
+                source = "your card";
             } else {
                 source = toolCall.getToolName();
             }
