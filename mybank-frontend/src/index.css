@@ -222,6 +222,13 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .form-page { margin: 0 auto; max-width: 30rem; padding: .5rem 0 3rem; }
 .form-page .back-link { display: inline-block; font-size: .88rem; margin-bottom: 1rem; }
 .form-page .transaction-form { width: 100%; }
+/* Email confirmation: the round icon on "Check your email" and the verify page */
+.auth-icon { align-items: center; border-radius: 50%; display: flex; font-size: 1.4rem; font-weight: 800; height: 3rem; justify-content: center; margin-bottom: 1rem; width: 3rem; }
+.auth-icon--success { background: var(--success-soft); color: var(--success); }
+.auth-icon--error { background: var(--danger-soft); color: var(--danger); }
+/* "Confirm your email first" on the sign-in form */
+.auth-notice { background: var(--warning-soft); border-radius: var(--radius-sm); color: var(--warning); display: flex; flex-direction: column; font-size: .85rem; gap: .3rem; line-height: 1.5; margin-top: 1.25rem; padding: .85rem .95rem; }
+.auth-notice .button { margin-top: .5rem; }
 .form-warning {
   background: var(--danger-soft);
   border-radius: var(--radius-sm);

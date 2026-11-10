@@ -34,7 +34,7 @@ function HomePage() {
           <div className="home-notice__icon" aria-hidden="true">✓</div>
           <div>
             <h2>Account verification</h2>
-            <p>New accounts are created in a pending state. An administrator will review and activate your account before banking features become available.</p>
+            <p>After you sign up, open the link we email you to confirm your address. Then an administrator reviews and activates your account before banking features become available.</p>
           </div>
         </section>
 
