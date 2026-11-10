@@ -33,6 +33,13 @@ public class ReferenceGenerator {
         return prefix + number;
     }
 
+    // The card fee: FEE followed by 7 random digits
+    public String generateCardFee() {
+        String prefix = "FEE";
+        int number = random.nextInt(9000000) + 1000000;
+        return prefix + number;
+    }
+
     public String generateTransfer() {
         // Standard bank branch/type prefix (e.g., DEP)
         String prefix = "TRN";
