@@ -1,14 +1,18 @@
 package com.example.mybank.controller;
 
 import com.example.mybank.dto.requests.CardApplicationRequest;
+import com.example.mybank.dto.requests.CardDetailsRequest;
 import com.example.mybank.dto.requests.CardTopUpRequest;
 import com.example.mybank.dto.requests.CardWithdrawRequest;
+import com.example.mybank.dto.responses.CardDetailsResponse;
 import com.example.mybank.dto.responses.CardMoveResponse;
 import com.example.mybank.dto.responses.CardResponse;
 import com.example.mybank.dto.responses.CardTransactionResponse;
+import com.example.mybank.services.CardDetailsService;
 import com.example.mybank.services.CardMoneyService;
 import com.example.mybank.services.CardService;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,10 +35,13 @@ public class CardController {
 
     private final CardService cardService;
     private final CardMoneyService cardMoneyService;
+    private final CardDetailsService cardDetailsService;
 
-    public CardController(CardService cardService, CardMoneyService cardMoneyService) {
+    public CardController(CardService cardService, CardMoneyService cardMoneyService,
+                          CardDetailsService cardDetailsService) {
         this.cardService = cardService;
         this.cardMoneyService = cardMoneyService;
+        this.cardDetailsService = cardDetailsService;
     }
 
     /**
@@ -109,5 +116,21 @@ public class CardController {
             Authentication authentication
     ) {
         return ResponseEntity.ok(cardMoneyService.getCardTransactions(authentication.getName(), id, limit));
+    }
+
+    /**
+     * POST /api/v1/cards/{id}/details
+     * The full card number and CVV, only after the PIN. A POST so the PIN is never in a URL.
+     * no-store: the browser and any proxy must not keep a copy of the answer.
+     */
+    @PostMapping("/{id}/details")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<CardDetailsResponse> revealDetails(
+            @PathVariable UUID id,
+            @Valid @RequestBody CardDetailsRequest request,
+            Authentication authentication
+    ) {
+        CardDetailsResponse details = cardDetailsService.revealDetails(authentication.getName(), id, request.pin());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(details);
     }
 }
