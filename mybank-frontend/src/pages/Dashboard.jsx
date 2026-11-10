@@ -77,6 +77,7 @@ const Dashboard = () => {
     const describeTransaction = (transaction) => {
         if (transaction.type === 'DEPOSIT') return 'Money added';
         if (transaction.type === 'WITHDRAWAL') return 'Cash withdrawal';
+        if (transaction.type === 'CARD_FEE') return 'Card fee';
         return transaction.direction === 'IN'
             ? `Received from account •••${transaction.counterpartyLast4 || ''}`
             : `Sent to account •••${transaction.counterpartyLast4 || ''}`;
