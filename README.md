@@ -32,6 +32,7 @@ It also has an **AI assistant** (Spring AI + Groq) that answers questions about 
 
 **Customers**
 - Register with email, password and a 4-digit transaction PIN — a default `CURRENT` account in `KES` is opened automatically.
+- Confirm the email address through a link (sent with Brevo) before signing in for the first time.
 - Log in and receive a JWT (valid for 24 hours by default).
 - Open additional accounts: `SAVINGS`, `CURRENT`, `FIXED_01`, `FIXED_02`, `FIXED_03`, in any 3-letter currency.
 - Deposit, withdraw and transfer money, each authorised with the account PIN.
@@ -412,18 +413,23 @@ The suite runs on an in-memory database and never calls Groq: the model is repla
 | `app.assistant.prompt-version` | all | Which `prompts/assistant-<version>.txt` to use (default `v3`). |
 | `app.assistant.price.input-per-million` / `output-per-million` | all | US dollars per million tokens for the cost estimate (default `0.15` / `0.60`). |
 | `management.endpoints.web.exposure.include` | all | Actuator endpoints that are switched on (`health,metrics`). |
+| `BREVO_API_KEY` → `app.mail.brevo-api-key` | all | Brevo key for the confirmation emails. Without it, locally the email is printed in the backend log; in `prod`, sign-up fails until it is set. |
+| `MAIL_FROM` → `app.mail.from` | all | The sender address, verified in Brevo. Required when `BREVO_API_KEY` is set. |
+| `MAIL_FROM_NAME` → `app.mail.from-name` | all | The sender name (default `MyBank`). The confirmation link points at `FRONTEND_URL`. |
 | `VITE_API_BASE_URL` | frontend | API base URL baked into the frontend build. |
 
 ## API reference
 
-Base URL: `/api/v1`. All endpoints except `/auth/register` and `/auth/login` require `Authorization: Bearer <token>`.
+Base URL: `/api/v1`. All endpoints except `/auth/register`, `/auth/login`, `/auth/verify-email` and `/auth/resend-verification` require `Authorization: Bearer <token>`.
 
 ### Authentication
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/auth/register` | Create a user and their default account. Returns a JWT. |
-| `POST` | `/auth/login` | Authenticate. Returns a JWT and the user's first account. |
+| `POST` | `/auth/register` | Create a user and their default account, and email a confirmation link. Returns `{ email, message }`, no JWT. `503` if the email can't be sent (nothing is saved). |
+| `POST` | `/auth/verify-email` | `{ token }` from the link. Confirms the email. A wrong, used or expired link (24 hours) gets `400`. |
+| `POST` | `/auth/resend-verification` | `{ email }`. Sends a new link, at most 3 an hour. Always the same answer, so it can't reveal who has an account. |
+| `POST` | `/auth/login` | Authenticate. Returns a JWT and the user's first account. An unconfirmed email gets `403` "Confirm your email first" (only after the right password). |
 | `GET` | `/auth/me` | The signed-in user's own first name, last name and email. Needs a token. |
 | `GET` | `/auth/me/role` | Returns `ROLE_USER` or `ROLE_ADMIN` for the current token. Needs a token. |
 
@@ -439,7 +445,7 @@ POST /api/v1/auth/register
 }
 ```
 
-**Auth response**
+**Login response**
 ```json
 {
   "token": "eyJhbGciOi...",
@@ -560,7 +566,8 @@ The React app in [`mybank-frontend/`](mybank-frontend) stores the JWT in `localS
 | Route | Page |
 |---|---|
 | `/` | Landing page |
-| `/register`, `/login` | Sign-up and sign-in |
+| `/register`, `/login` | Sign-up (then "Check your email") and sign-in |
+| `/verify-email` | Opened from the link in the confirmation email |
 | `/dashboard` | Customer accounts overview, recent activity, account options and the assistant (**Need help?**) |
 | `/admin` | Account approvals: approve new accounts, unfreeze frozen ones, change type |
 | `/admin/stats` | Assistant stats |
