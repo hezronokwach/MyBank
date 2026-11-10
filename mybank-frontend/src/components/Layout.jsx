@@ -29,7 +29,7 @@ function isAllowed(access, role) {
 }
 
 // The bar at the top of every signed-in page.
-// Customers see Dashboard. Admins see their own two pages instead: Approvals and Assistant stats.
+// Customers see Dashboard. Admins see their own pages instead: Approvals, Cards and Assistant stats.
 // A page in the wrong place is sent to the right home page, and a signed-out visitor to the sign-in page.
 const Layout = ({ children, access }) => {
     const navigate = useNavigate();
@@ -94,8 +94,9 @@ const Layout = ({ children, access }) => {
                         {isAdmin && (
                             <>
                                 <span className="app-nav__role">Admin</span>
-                                {/* "end" so this link is not also marked active on /admin/stats */}
+                                {/* "end" so this link is not also marked active on /admin/cards or /admin/stats */}
                                 <NavLink to="/admin" end className={linkClass}>Approvals</NavLink>
+                                <NavLink to="/admin/cards" className={linkClass}>Cards</NavLink>
                                 <NavLink to="/admin/stats" className={linkClass}>Assistant stats</NavLink>
                             </>
                         )}
