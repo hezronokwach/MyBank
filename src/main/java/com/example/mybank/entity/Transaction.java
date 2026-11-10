@@ -28,6 +28,11 @@ public class Transaction {
     @JoinColumn(name = "to_account_id")
     private Account toAccount;
 
+    // Only for card moves (CARD_TOPUP, CARD_WITHDRAWAL): the card the money went onto or came off
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "card_id")
+    private Card card;
+
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
 
@@ -65,6 +70,15 @@ public class Transaction {
         this.status = status;
     }
 
+    /**
+     * Constructor for card moves: one side is the account, the other side is the card.
+     */
+    public Transaction(String reference, Account fromAccount, Account toAccount, Card card,
+                       BigDecimal amount, TransactionType type, TransactionStatus status) {
+        this(reference, fromAccount, toAccount, amount, type, status);
+        this.card = card;
+    }
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();
@@ -80,6 +94,10 @@ public class Transaction {
 
     public String getReference() {
         return reference;
+    }
+
+    public Card getCard() {
+        return card;
     }
 
     public Account getFromAccount() {

@@ -73,6 +73,14 @@ public class Card {
     @Column(name = "rejection_reason", length = 200)
     private String rejectionReason;
 
+    // Wrong PINs in a row. After 3, card actions are locked until pinLockedUntil.
+    // Integer, not int: cards saved before this column existed have no value, which counts as 0.
+    @Column(name = "failed_pin_attempts")
+    private Integer failedPinAttempts;
+
+    @Column(name = "pin_locked_until")
+    private Instant pinLockedUntil;
+
     // Two admins acting on the same card at the same moment: only the first save succeeds
     @Version
     private Long version;
@@ -205,6 +213,25 @@ public class Card {
 
     public void setRejectionReason(String rejectionReason) {
         this.rejectionReason = rejectionReason;
+    }
+
+    public int getFailedPinAttempts() {
+        if (failedPinAttempts == null) {
+            return 0;
+        }
+        return failedPinAttempts;
+    }
+
+    public void setFailedPinAttempts(int failedPinAttempts) {
+        this.failedPinAttempts = failedPinAttempts;
+    }
+
+    public Instant getPinLockedUntil() {
+        return pinLockedUntil;
+    }
+
+    public void setPinLockedUntil(Instant pinLockedUntil) {
+        this.pinLockedUntil = pinLockedUntil;
     }
 
     public Long getVersion() {
