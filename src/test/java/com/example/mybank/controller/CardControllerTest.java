@@ -99,6 +99,14 @@ class CardControllerTest {
     }
 
     @Test
+    void theFeeComesFromTheSettings() throws Exception {
+        mockMvc.perform(get("/api/v1/cards/fee").header("Authorization", customerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fee").value(300.0))
+                .andExpect(jsonPath("$.currency").value("KES"));
+    }
+
+    @Test
     void aSecondApplicationGets409() throws Exception {
         String body = "{\"accountNumber\":\"1000004821\",\"pin\":\"4721\"}";
         mockMvc.perform(post("/api/v1/cards").header("Authorization", customerToken).contentType(JSON).content(body))
